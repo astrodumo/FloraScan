@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloraSense — Rarity Index</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .page { min-height: 100vh; display: flex; flex-direction: column; background: #0d1a0e; }
+
+  .page-hero {
+    position: relative;
+    padding: 3.5rem 4rem 3rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.12);
+    overflow: hidden;
+  }
+
+  .page-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('../assets/images/forest_elf.jpg');
+    background-size: cover;
+    background-position: center 60%;
+    filter: saturate(0.3) brightness(0.15);
+    z-index: 0;
+  }
+
+  .page-hero-content { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; width: 100%; }
+
+  .panel-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .panel-label::before { content: ''; width: 28px; height: 1px; background: var(--leaf); }
+
+  .page-hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 0.8rem;
+  }
+  .page-hero h1 em { font-style: italic; color: var(--sage); }
+  .page-hero p { font-size: 0.88rem; color: rgba(240,236,224,0.5); line-height: 1.7; max-width: 540px; }
+
+  /* SCALE STRIP */
+  .scale-strip {
+    padding: 1.5rem 4rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.1);
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+  }
+  .scale-label { font-size: 0.62rem; letter-spacing: 0.18em; text-transform: uppercase; color: rgba(240,236,224,0.3); margin-bottom: 0.8rem; }
+  .scale-bar { display: flex; gap: 3px; }
+  .scale-seg { flex: 1; padding: 0.55rem 0.8rem; cursor: pointer; transition: opacity 0.2s; display: flex; flex-direction: column; gap: 4px; }
+  .scale-seg:hover { opacity: 0.8; }
+  .scale-seg.active { outline: 1.5px solid rgba(240,236,224,0.35); }
+  .scale-seg-label { font-size: 0.65rem; font-weight: 700; letter-spacing: 0.1em; text-transform: uppercase; }
+  .scale-seg-count { font-family: 'Cormorant Garamond', serif; font-size: 1.1rem; font-weight: 300; }
+
+  .seg-all { background: rgba(107,163,104,0.12); } .seg-all .scale-seg-label,.seg-all .scale-seg-count { color: var(--leaf); }
+  .seg-lc  { background: rgba(107,163,104,0.15); } .seg-lc  .scale-seg-label,.seg-lc  .scale-seg-count { color: #6ba368; }
+  .seg-nt  { background: rgba(160,195,80,0.13);  } .seg-nt  .scale-seg-label,.seg-nt  .scale-seg-count { color: #a0c350; }
+  .seg-vu  { background: rgba(201,168,76,0.15);  } .seg-vu  .scale-seg-label,.seg-vu  .scale-seg-count { color: #c9a84c; }
+  .seg-en  { background: rgba(210,120,60,0.15);  } .seg-en  .scale-seg-label,.seg-en  .scale-seg-count { color: #d2783c; }
+  .seg-cr  { background: rgba(200,70,70,0.15);   } .seg-cr  .scale-seg-label,.seg-cr  .scale-seg-count { color: #c84646; }
+  .seg-ew  { background: rgba(150,60,180,0.15);  } .seg-ew  .scale-seg-label,.seg-ew  .scale-seg-count { color: #9a60b4; }
+  .seg-ex  { background: rgba(80,80,80,0.2);     } .seg-ex  .scale-seg-label,.seg-ex  .scale-seg-count { color: rgba(240,236,224,0.35); }
+
+  /* CONTROLS */
+  .controls-row {
+    padding: 1.2rem 4rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.08);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .search-wrap { position: relative; flex: 1; min-width: 200px; }
+  .search-wrap svg { position: absolute; left: 14px; top: 50%; transform: translateY(-50%); width: 15px; height: 15px; stroke: rgba(143,176,138,0.45); pointer-events: none; }
+  #search-input { width: 100%; background: rgba(20,36,21,0.5); border: 0.5px solid rgba(143,176,138,0.2); color: var(--cream); font-family: 'Syne', sans-serif; font-size: 0.82rem; padding: 0.7rem 1rem 0.7rem 2.6rem; outline: none; transition: border-color 0.2s; }
+  #search-input::placeholder { color: rgba(240,236,224,0.28); }
+  #search-input:focus { border-color: var(--leaf); }
+
+  .sort-select { background: rgba(20,36,21,0.5); border: 0.5px solid rgba(143,176,138,0.2); color: rgba(240,236,224,0.7); font-family: 'Syne', sans-serif; font-size: 0.78rem; padding: 0.7rem 1rem; outline: none; cursor: pointer; }
+  .sort-select option { background: #0d1a0e; }
+
+  .region-pills { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+  .region-pill { font-family: 'Syne', sans-serif; font-size: 0.68rem; letter-spacing: 0.08em; text-transform: uppercase; padding: 0.4rem 0.85rem; border: 0.5px solid rgba(143,176,138,0.18); color: rgba(240,236,224,0.45); background: transparent; cursor: pointer; transition: all 0.2s; }
+  .region-pill:hover { border-color: var(--leaf); color: var(--cream); }
+  .region-pill.active { border-color: var(--leaf); color: var(--leaf); background: rgba(107,163,104,0.1); }
+
+  /* GRID */
+  .rarity-grid-wrap { padding: 2rem 4rem 3rem; max-width: 1300px; margin: 0 auto; width: 100%; flex: 1; }
+  .grid-meta { font-size: 0.72rem; color: rgba(240,236,224,0.3); letter-spacing: 0.06em; margin-bottom: 1.5rem; }
+  .rarity-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 1px; background: rgba(143,176,138,0.07); }
+
+  /* PLANT CARD */
+  .plant-card { background: #0d1a0e; padding: 1.5rem; cursor: pointer; transition: background 0.2s; position: relative; padding-bottom: 3rem; }
+  .plant-card:hover { background: rgba(20,36,21,0.9); }
+  .plant-card.expanded { background: rgba(20,40,21,0.95); }
+
+  .card-top { display: flex; align-items: flex-start; justify-content: space-between; gap: 0.8rem; margin-bottom: 0.8rem; }
+  .card-name { font-family: 'Cormorant Garamond', serif; font-size: 1.3rem; font-weight: 400; line-height: 1.1; margin-bottom: 0.2rem; }
+  .card-latin { font-family: 'Cormorant Garamond', serif; font-style: italic; font-size: 0.82rem; color: rgba(240,236,224,0.38); }
+  .card-snippet { font-size: 0.78rem; color: rgba(240,236,224,0.45); line-height: 1.65; margin-bottom: 0.8rem; }
+
+  .status-badge { font-size: 0.62rem; font-weight: 700; letter-spacing: 0.12em; text-transform: uppercase; padding: 0.28rem 0.7rem; white-space: nowrap; flex-shrink: 0; }
+  .status-LC { border: 0.5px solid rgba(107,163,104,0.4); color: #6ba368; }
+  .status-NT { border: 0.5px solid rgba(160,195,80,0.4);  color: #a0c350; }
+  .status-VU { border: 0.5px solid rgba(201,168,76,0.4);  color: #c9a84c; }
+  .status-EN { border: 0.5px solid rgba(210,120,60,0.4);  color: #d2783c; }
+  .status-CR { border: 0.5px solid rgba(200,70,70,0.4);   color: #c84646; }
+  .status-EW { border: 0.5px solid rgba(150,60,180,0.4);  color: #9a60b4; }
+  .status-EX { border: 0.5px solid rgba(120,120,120,0.4); color: rgba(240,236,224,0.4); }
+
+  .card-meta-row { display: flex; gap: 1rem; flex-wrap: wrap; }
+  .card-meta-item { font-size: 0.68rem; color: rgba(240,236,224,0.32); letter-spacing: 0.05em; }
+  .card-meta-item span { color: rgba(240,236,224,0.6); font-weight: 500; }
+
+  .card-expand-btn { position: absolute; bottom: 1.2rem; right: 1.2rem; width: 24px; height: 24px; border: 0.5px solid rgba(143,176,138,0.2); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; color: rgba(143,176,138,0.5); font-size: 16px; line-height: 1; }
+  .plant-card:hover .card-expand-btn { border-color: var(--leaf); color: var(--leaf); }
+
+  /* EXPANDED DETAIL */
+  .card-detail { display: none; margin-top: 1.2rem; padding-top: 1.2rem; border-top: 0.5px solid rgba(143,176,138,0.12); animation: fadeUp 0.3s ease forwards; }
+  .plant-card.expanded .card-detail { display: block; }
+
+  @keyframes fadeUp { from { opacity:0; transform:translateY(8px); } to { opacity:1; transform:translateY(0); } }
+
+  .detail-row { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2rem; margin-bottom: 1.2rem; }
+  .detail-block-title { font-size: 0.62rem; letter-spacing: 0.15em; text-transform: uppercase; color: var(--leaf); margin-bottom: 0.45rem; }
+  .detail-block-body { font-size: 0.78rem; color: rgba(240,236,224,0.6); line-height: 1.65; }
+
+  .threat-tags { display: flex; flex-wrap: wrap; gap: 0.4rem; margin-top: 0.4rem; }
+  .threat-tag { font-size: 0.65rem; letter-spacing: 0.05em; padding: 0.25rem 0.6rem; border: 0.5px solid rgba(200,100,80,0.25); color: #d48a7a; }
+  .conservation-tag { font-size: 0.65rem; letter-spacing: 0.05em; padding: 0.25rem 0.6rem; border: 0.5px solid rgba(107,163,104,0.25); color: var(--sage); }
+
+  .card-actions { display: flex; gap: 1rem; margin-top: 1rem; padding-top: 1rem; border-top: 0.5px solid rgba(143,176,138,0.08); }
+  .card-action-link { font-size: 0.72rem; letter-spacing: 0.08em; text-transform: uppercase; color: var(--leaf); text-decoration: none; transition: color 0.2s; }
+  .card-action-link:hover { color: var(--sage); }
+
+  /* LEGEND */
+  .legend-strip { padding: 1.2rem 4rem; border-top: 0.5px solid rgba(143,176,138,0.08); display: flex; gap: 1.5rem; flex-wrap: wrap; max-width: 1300px; margin: 0 auto; width: 100%; }
+  .legend-item { display: flex; align-items: center; gap: 6px; font-size: 0.68rem; color: rgba(240,236,224,0.4); letter-spacing: 0.05em; }
+  .legend-dot { width: 8px; height: 8px; border-radius: 50%; flex-shrink: 0; }
+
+  @media (max-width: 900px) {
+    .page-hero,.scale-strip,.controls-row,.rarity-grid-wrap,.legend-strip { padding-left: 1.5rem; padding-right: 1.5rem; }
+    .rarity-grid { grid-template-columns: 1fr; }
+    .scale-seg-label { font-size: 0.55rem; }
+    .detail-row { grid-template-columns: 1fr; }
+    .region-pills { display: none; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <nav>
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2C16 2 8 10 8 18C8 22.4 11.6 26 16 26C20.4 26 24 22.4 24 18C24 10 16 2 16 2Z" fill="#6ba368" opacity="0.7"/>
+        <path d="M16 8C16 8 10 14 10 20C10 23.3 12.7 26 16 26" stroke="#8fb08a" stroke-width="1" fill="none"/>
+        <line x1="16" y1="26" x2="16" y2="30" stroke="#6ba368" stroke-width="1.5"/>
+      </svg>
+      <span class="logo-text">FloraSense</span>
+    </a>
+    <ul class="nav-links">
+      <!--<li><a href="scan.html">Identify</a></li>-->
+      <!--<li><a href="remedies.html">Remedies</a></li>-->
+      <li><a href="rarity.html" style="color:var(--cream)">Rarity Index</a></li>
+      <!--<li><a href="field-guide.html">Field Guide</a></li>-->
+    </ul>
+  </nav>
+
+  <div class="page-hero">
+    <div class="page-hero-content">
+      <div class="panel-label">IUCN Conservation Status</div>
+      <h1>How <em>rare</em> is what<br>you've found?</h1>
+      <p>Every plant in our index is cross-referenced with the IUCN Red List. From abundant wildflowers to species on the edge of extinction — know what you're looking at and what it means.</p>
+    </div>
+  </div>
+
+  <!-- RARITY SCALE BAR -->
+  <div class="scale-strip">
+    <div class="scale-label">Filter by conservation status — click to narrow results</div>
+    <div class="scale-bar">
+      <div class="scale-seg seg-all active" data-status="all"><span class="scale-seg-label">All</span><span class="scale-seg-count" id="count-all">12</span></div>
+      <div class="scale-seg seg-lc"  data-status="LC"><span class="scale-seg-label">LC</span><span class="scale-seg-count" id="count-LC">0</span></div>
+      <div class="scale-seg seg-nt"  data-status="NT"><span class="scale-seg-label">NT</span><span class="scale-seg-count" id="count-NT">0</span></div>
+      <div class="scale-seg seg-vu"  data-status="VU"><span class="scale-seg-label">VU</span><span class="scale-seg-count" id="count-VU">0</span></div>
+      <div class="scale-seg seg-en"  data-status="EN"><span class="scale-seg-label">EN</span><span class="scale-seg-count" id="count-EN">0</span></div>
+      <div class="scale-seg seg-cr"  data-status="CR"><span class="scale-seg-label">CR</span><span class="scale-seg-count" id="count-CR">0</span></div>
+      <div class="scale-seg seg-ew"  data-status="EW"><span class="scale-seg-label">EW</span><span class="scale-seg-count" id="count-EW">0</span></div>
+      <div class="scale-seg seg-ex"  data-status="EX"><span class="scale-seg-label">EX</span><span class="scale-seg-count" id="count-EX">0</span></div>
+    </div>
+  </div>
+
+  <!-- CONTROLS -->
+  <div class="controls-row">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+      <input type="text" id="search-input" placeholder="Search plant name, region, or family…">
+    </div>
+    <select class="sort-select" id="sort-select">
+      <option value="status">Sort by: Status</option>
+      <option value="name">Sort by: Name</option>
+      <option value="population">Sort by: Population Trend</option>
+    </select>
+    <div class="region-pills">
+      <button class="region-pill active" data-region="all">All Regions</button>
+      <button class="region-pill" data-region="africa">Africa</button>
+      <button class="region-pill" data-region="europe">Europe</button>
+      <button class="region-pill" data-region="asia">Asia</button>
+      <button class="region-pill" data-region="americas">Americas</button>
+      <button class="region-pill" data-region="global">Global</button>
+    </div>
+  </div>
+
+  <!-- GRID -->
+  <div class="rarity-grid-wrap">
+    <div class="grid-meta" id="grid-meta">Showing 12 species</div>
+    <div class="rarity-grid" id="rarity-grid"></div>
+  </div>
+
+  <!-- LEGEND -->
+  <div class="legend-strip">
+    <div class="legend-item"><div class="legend-dot" style="background:#6ba368"></div>LC — Least Concern</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#a0c350"></div>NT — Near Threatened</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c9a84c"></div>VU — Vulnerable</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#d2783c"></div>EN — Endangered</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#c84646"></div>CR — Critically Endangered</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#9a60b4"></div>EW — Extinct in the Wild</div>
+    <div class="legend-item"><div class="legend-dot" style="background:#555"></div>EX — Extinct</div>
+  </div>
+
+  <footer>
+    <span>&copy; 2026 FloraSense &mdash; Field Intelligence for the Natural World</span>
+    <span>Privacy &nbsp;&middot;&nbsp; Terms &nbsp;&middot;&nbsp; API</span>
+  </footer>
+</div>
+
+<script>
+const plants = [
+  { id:1,  name:'Stinging Nettle',         latin:'Urtica dioica',          family:'Urticaceae',     status:'LC', region:'global',  population:'Stable',        trend:'stable',    habitat:'Disturbed ground, riverbanks, woodland edges',       range:'Worldwide — all continents except Antarctica',           snippet:'One of the most widespread flowering plants on Earth. Abundant across temperate regions and highly adaptable to human-disturbed environments.',                                                                                threats:[],                                                                                          conservation:['No conservation concern','Widely cultivated'],                                               lastAssessed:'2022' },
+  { id:2,  name:'Common Dandelion',        latin:'Taraxacum officinale',   family:'Asteraceae',     status:'LC', region:'global',  population:'Increasing',    trend:'increasing',habitat:'Grassland, lawns, roadsides, disturbed soil',        range:'Globally distributed, native to Eurasia',                snippet:'Among the most successful plant colonisers in the world. Thrives in disturbed habitats and is an indicator of ecosystem health in some contexts.',                                                                             threats:[],                                                                                          conservation:['No conservation action required'],                                                           lastAssessed:'2021' },
+  { id:3,  name:'Wild Garlic',             latin:'Allium ursinum',         family:'Amaryllidaceae', status:'LC', region:'europe',  population:'Stable',        trend:'stable',    habitat:'Damp deciduous woodland, shaded stream banks',        range:'Europe and Asia',                                        snippet:'A spring-flowering bulb that carpets ancient woodland floors. Strong indicator of undisturbed, ancient woodland ecosystems.',                                                                                                 threats:['Habitat loss from woodland clearance'],                                                    conservation:['Protected in some EU states','Habitat preservation key'],                                   lastAssessed:'2020' },
+  { id:4,  name:'Yarrow',                  latin:'Achillea millefolium',   family:'Asteraceae',     status:'LC', region:'global',  population:'Stable',        trend:'stable',    habitat:'Meadows, grasslands, roadsides, open woodland',       range:'Northern hemisphere — widespread',                       snippet:'A resilient and adaptable perennial found across most of the temperate world. Often one of the first plants to colonise disturbed ground.',                                                                                  threats:[],                                                                                          conservation:['No concern','Beneficial for pollinators'],                                                   lastAssessed:'2021' },
+  { id:5,  name:"Lady's Slipper Orchid",  latin:'Cypripedium calceolus',  family:'Orchidaceae',    status:'NT', region:'europe',  population:'Declining',     trend:'declining', habitat:'Calcareous woodland, limestone grassland',            range:'Europe and Asia, highly fragmented',                     snippet:"Once abundant across European limestone woodlands, now reduced to isolated populations. One of Europe's most celebrated wild orchids.",                                                                                       threats:['Illegal collection','Habitat loss','Woodland management changes'],                         conservation:['CITES Appendix II','Protected across EU','Active reintroduction programmes'],               lastAssessed:'2023' },
+  { id:6,  name:'Bog Rosemary',           latin:'Andromeda polifolia',    family:'Ericaceae',      status:'NT', region:'europe',  population:'Declining',     trend:'declining', habitat:'Peat bogs, wet heathland, sphagnum moss communities', range:'Circumpolar — Northern Europe, Asia, North America',     snippet:'A small evergreen shrub of open peatlands. Highly sensitive to hydrological changes, making it a strong indicator of bog ecosystem health.',                                                                                 threats:['Peat extraction','Drainage of wetlands','Climate-driven habitat drying'],                  conservation:['Peatland restoration key','Protected in several EU countries'],                             lastAssessed:'2022' },
+  { id:7,  name:'Wild Himalayan Cherry',  latin:'Prunus cerasoides',      family:'Rosaceae',       status:'VU', region:'asia',    population:'Declining',     trend:'declining', habitat:'Montane forests, 1,000–2,400m elevation',            range:'Himalayas — India, Nepal, Bhutan, Myanmar',              snippet:'A culturally significant tree throughout the Himalayan region. Sacred in Buddhist and Hindu traditions, with bark and flowers used medicinally.',                                                                              threats:['Deforestation','Over-harvesting of bark','Agricultural expansion','Climate change'],        conservation:['Protected forest zones','Community conservation efforts in Nepal'],                         lastAssessed:'2022' },
+  { id:8,  name:"Dragon's Blood Tree",    latin:'Dracaena cinnabari',     family:'Asparagaceae',   status:'VU', region:'africa',  population:'Declining',     trend:'declining', habitat:'Rocky plateaus, monsoon cloud forest',               range:'Endemic to Socotra Island, Yemen',                       snippet:"One of the most iconic trees on Earth. Its distinctive umbrella canopy and blood-red resin are instantly recognisable. Found nowhere else naturally.",                                                                        threats:['Climate change reducing fog','Overgrazing','Low natural regeneration'],                    conservation:['UNESCO World Heritage Site','Socotra Archipelago protected area'],                          lastAssessed:'2023' },
+  { id:9,  name:'Ghost Orchid',           latin:'Epipogium aphyllum',     family:'Orchidaceae',    status:'EN', region:'europe',  population:'Declining',     trend:'declining', habitat:'Deep shaded beech and oak woodland, humus-rich soils',range:'Europe and temperate Asia, highly sporadic',            snippet:'A leafless, mycoheterotrophic orchid with no chlorophyll. Derives all nutrients from underground fungi. Can remain dormant underground for decades before flowering.',                                                         threats:['Woodland disturbance','Loss of mycorrhizal networks','Climate change','Deer browsing'],     conservation:['Strictly protected across EU','Sites kept confidential to prevent disturbance'],            lastAssessed:'2023' },
+  { id:10, name:'African Wild Violet',    latin:'Saintpaulia ionantha',   family:'Gesneriaceae',   status:'EN', region:'africa',  population:'Declining',     trend:'declining', habitat:'Humid montane forest, shaded rocky outcrops',        range:'Endemic to the Eastern Arc Mountains, Tanzania',         snippet:'The wild ancestor of one of the worlds most popular houseplants is critically threatened in its native habitat — deeply ironic given its domestic abundance.',                                                                  threats:['Deforestation','Agricultural encroachment','Collection pressure'],                         conservation:['CITES Appendix I','Eastern Arc forest reserves','Ex-situ conservation in botanical gardens'],lastAssessed:'2022' },
+  { id:11, name:'Rafflesia',              latin:'Rafflesia arnoldii',      family:'Rafflesiaceae',  status:'CR', region:'asia',    population:'Declining',     trend:'declining', habitat:'Lowland tropical rainforest',                        range:'Sumatra and Borneo, Indonesia',                          snippet:'Produces the largest individual flower on Earth — up to 1 metre across and weighing 11kg. Entirely parasitic with no roots, stems or leaves. Its survival depends on intact lowland rainforest.',                            threats:['Rapid deforestation','Palm oil expansion','Cannot be cultivated outside natural habitat'],  conservation:['Indonesian national parks','No successful ex-situ conservation yet developed'],             lastAssessed:'2023' },
+  { id:12, name:"Wood's Cycad",           latin:'Encephalartos woodii',    family:'Zamiaceae',      status:'EW', region:'africa',  population:'None in wild',  trend:'none',      habitat:'Formerly subtropical coastal forest, South Africa', range:'Last wild specimen found in KwaZulu-Natal, 1916',        snippet:'Possibly the loneliest plant on Earth. Only male plants were ever found — no female, no reproduction. Every living specimen is a clone. Extinct in the wild since 1916.',                                                      threats:['Original habitat destroyed','No wild population remains','Reproduction impossible without female plant'], conservation:['Held in 150+ botanical gardens globally','Genetic research ongoing','Kew Gardens holds original specimens'], lastAssessed:'2010' },
+];
+
+const statusOrder = { LC:0, NT:1, VU:2, EN:3, CR:4, EW:5, EX:6 };
+let activeStatus = 'all', activeRegion = 'all', searchQuery = '', sortBy = 'status', expandedId = null;
+
+function getFiltered() {
+  return plants
+    .filter(p => {
+      const matchStatus = activeStatus === 'all' || p.status === activeStatus;
+      const matchRegion = activeRegion === 'all' || p.region === activeRegion;
+      const q = searchQuery.toLowerCase();
+      const matchSearch = !q || p.name.toLowerCase().includes(q) || p.latin.toLowerCase().includes(q) || p.family.toLowerCase().includes(q) || p.range.toLowerCase().includes(q);
+      return matchStatus && matchRegion && matchSearch;
+    })
+    .sort((a, b) => {
+      if (sortBy === 'name') return a.name.localeCompare(b.name);
+      if (sortBy === 'population') return ['declining','stable','increasing','none'].indexOf(a.trend) - ['declining','stable','increasing','none'].indexOf(b.trend);
+      return statusOrder[a.status] - statusOrder[b.status];
+    });
+}
+
+function render() {
+  const filtered = getFiltered();
+  const grid = document.getElementById('rarity-grid');
+  document.getElementById('grid-meta').textContent = `Showing ${filtered.length} species`;
+  grid.innerHTML = '';
+
+  if (!filtered.length) {
+    grid.innerHTML = '<div style="padding:4rem 2rem;text-align:center;color:rgba(240,236,224,0.25);font-size:0.85rem;grid-column:1/-1">No species match your current filters.</div>';
+    return;
+  }
+
+  filtered.forEach(p => {
+    const trendColor = p.trend === 'declining' ? '#c84646' : p.trend === 'increasing' ? '#6ba368' : 'rgba(240,236,224,0.4)';
+    const trendIcon  = p.trend === 'declining' ? '&#8595;' : p.trend === 'increasing' ? '&#8593;' : p.trend === 'stable' ? '&#8594;' : '&mdash;';
+    const isExpanded = p.id === expandedId;
+
+    const card = document.createElement('div');
+    card.className = 'plant-card' + (isExpanded ? ' expanded' : '');
+    card.dataset.id = p.id;
+
+    card.innerHTML = `
+      <div class="card-top">
+        <div>
+          <div class="card-name">${p.name}</div>
+          <div class="card-latin">${p.latin}</div>
+        </div>
+        <span class="status-badge status-${p.status}">${p.status}</span>
+      </div>
+      <p class="card-snippet">${p.snippet}</p>
+      <div class="card-meta-row">
+        <div class="card-meta-item">Family <span>${p.family}</span></div>
+        <div class="card-meta-item">Region <span style="text-transform:capitalize">${p.region}</span></div>
+        <div class="card-meta-item">Trend <span style="color:${trendColor}">${trendIcon} ${p.population}</span></div>
+        <div class="card-meta-item">Assessed <span>${p.lastAssessed}</span></div>
+      </div>
+      <div class="card-detail">
+        <div class="detail-row">
+          <div><div class="detail-block-title">Habitat</div><div class="detail-block-body">${p.habitat}</div></div>
+          <div><div class="detail-block-title">Range</div><div class="detail-block-body">${p.range}</div></div>
+        </div>
+        ${p.threats.length ? `<div style="margin-bottom:1rem"><div class="detail-block-title">Threats</div><div class="threat-tags">${p.threats.map(t=>`<span class="threat-tag">${t}</span>`).join('')}</div></div>` : ''}
+        <div style="margin-bottom:1rem"><div class="detail-block-title">Conservation Measures</div><div class="threat-tags">${p.conservation.map(c=>`<span class="conservation-tag">${c}</span>`).join('')}</div></div>
+        <div class="card-actions">
+          <a href="field-guide.html" class="card-action-link">Field Guide &#8594;</a>
+          <a href="remedies.html" class="card-action-link">Medicinal Uses &#8594;</a>
+        </div>
+      </div>
+      <button class="card-expand-btn">${isExpanded ? '&#8722;' : '&#43;'}</button>
+    `;
+
+    const toggle = () => { expandedId = p.id === expandedId ? null : p.id; render(); };
+    card.querySelector('.card-expand-btn').addEventListener('click', e => { e.stopPropagation(); toggle(); });
+    card.addEventListener('click', toggle);
+    grid.appendChild(card);
+  });
+}
+
+function updateCounts() {
+  document.getElementById('count-all').textContent = plants.length;
+  ['LC','NT','VU','EN','CR','EW','EX'].forEach(s => {
+    document.getElementById('count-' + s).textContent = plants.filter(p => p.status === s).length;
+  });
+}
+
+document.querySelectorAll('.scale-seg').forEach(seg => {
+  seg.addEventListener('click', () => {
+    document.querySelectorAll('.scale-seg').forEach(s => s.classList.remove('active'));
+    seg.classList.add('active');
+    activeStatus = seg.dataset.status;
+    expandedId = null;
+    render();
+  });
+});
+
+document.querySelectorAll('.region-pill').forEach(pill => {
+  pill.addEventListener('click', () => {
+    document.querySelectorAll('.region-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    activeRegion = pill.dataset.region;
+    expandedId = null;
+    render();
+  });
+});
+
+document.getElementById('search-input').addEventListener('input', e => { searchQuery = e.target.value; expandedId = null; render(); });
+document.getElementById('sort-select').addEventListener('change', e => { sortBy = e.target.value; render(); });
+
+const nav = document.querySelector('nav');
+window.addEventListener('scroll', () => {
+  nav.style.background     = window.scrollY > 40 ? 'rgba(13,26,14,0.95)' : '';
+  nav.style.backdropFilter = window.scrollY > 40 ? 'blur(12px)' : '';
+});
+
+updateCounts();
+render();
+</script>
+</body>
+</html>

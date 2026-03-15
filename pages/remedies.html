@@ -1,0 +1,844 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloraSense — Remedies</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+
+  .page { min-height: 100vh; display: flex; flex-direction: column; background: #0d1a0e; }
+
+  /* ── PAGE HERO STRIP ── */
+  .page-hero {
+    position: relative;
+    padding: 3.5rem 4rem 3rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.12);
+    overflow: hidden;
+  }
+
+  .page-hero::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background-image: url('../assets/images/forest_elf3.jpg');
+    background-size: cover;
+    background-position: center 30%;
+    filter: saturate(0.3) brightness(0.18);
+    z-index: 0;
+  }
+
+  .page-hero-content { position: relative; z-index: 1; max-width: 1300px; margin: 0 auto; width: 100%; }
+
+  .page-hero .panel-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    margin-bottom: 1rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .page-hero .panel-label::before {
+    content: ''; width: 28px; height: 1px; background: var(--leaf);
+  }
+
+  .page-hero h1 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: clamp(2.2rem, 4vw, 3.5rem);
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 0.8rem;
+  }
+
+  .page-hero h1 em { font-style: italic; color: var(--sage); }
+
+  .page-hero p {
+    font-size: 0.88rem;
+    color: rgba(240,236,224,0.5);
+    line-height: 1.7;
+    max-width: 520px;
+  }
+
+  /* ── SEARCH & FILTER BAR ── */
+  .search-bar {
+    padding: 1.8rem 4rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.1);
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .search-wrap {
+    position: relative;
+    flex: 1;
+    min-width: 220px;
+  }
+
+  .search-wrap svg {
+    position: absolute;
+    left: 14px;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 16px; height: 16px;
+    stroke: rgba(143,176,138,0.5);
+    pointer-events: none;
+  }
+
+  #search-input {
+    width: 100%;
+    background: rgba(20,36,21,0.5);
+    border: 0.5px solid rgba(143,176,138,0.2);
+    color: var(--cream);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.82rem;
+    padding: 0.75rem 1rem 0.75rem 2.6rem;
+    outline: none;
+    transition: border-color 0.2s;
+  }
+
+  #search-input::placeholder { color: rgba(240,236,224,0.3); }
+  #search-input:focus { border-color: var(--leaf); }
+
+  .filter-pills {
+    display: flex;
+    gap: 0.5rem;
+    flex-wrap: wrap;
+  }
+
+  .filter-pill {
+    font-family: 'Syne', sans-serif;
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.45rem 1rem;
+    border: 0.5px solid rgba(143,176,138,0.2);
+    color: rgba(240,236,224,0.5);
+    background: transparent;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .filter-pill:hover { border-color: var(--leaf); color: var(--cream); }
+  .filter-pill.active { border-color: var(--leaf); color: var(--leaf); background: rgba(107,163,104,0.1); }
+
+  /* ── MAIN LAYOUT ── */
+  .remedies-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 300px 1fr;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  /* ── PLANT LIST (left) ── */
+  .plant-list {
+    border-right: 0.5px solid rgba(143,176,138,0.1);
+    overflow-y: auto;
+    max-height: calc(100vh - 280px);
+    position: sticky;
+    top: 0;
+  }
+
+  .plant-list-item {
+    padding: 1.1rem 1.5rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.08);
+    cursor: pointer;
+    transition: background 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 0.5rem;
+  }
+
+  .plant-list-item:hover { background: rgba(74,124,78,0.07); }
+  .plant-list-item.active { background: rgba(74,124,78,0.12); border-left: 2px solid var(--leaf); }
+
+  .pli-name {
+    font-size: 0.85rem;
+    font-weight: 500;
+    color: var(--cream);
+    margin-bottom: 0.2rem;
+  }
+
+  .pli-latin {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 0.78rem;
+    color: rgba(240,236,224,0.4);
+  }
+
+  .pli-badge {
+    font-size: 0.62rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    padding: 0.2rem 0.55rem;
+    white-space: nowrap;
+    flex-shrink: 0;
+  }
+
+  .pli-badge.potent   { border: 0.5px solid rgba(201,168,76,0.4);  color: var(--gold); }
+  .pli-badge.common   { border: 0.5px solid rgba(107,163,104,0.3); color: var(--leaf); }
+  .pli-badge.caution  { border: 0.5px solid rgba(200,100,80,0.4);  color: #d48a7a; }
+
+  .no-results {
+    padding: 2rem 1.5rem;
+    font-size: 0.8rem;
+    color: rgba(240,236,224,0.35);
+    text-align: center;
+    display: none;
+  }
+
+  /* ── REMEDY DETAIL (right) ── */
+  .remedy-detail {
+    padding: 2.5rem 3rem;
+    overflow-y: auto;
+  }
+
+  /* Empty state */
+  .detail-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 360px;
+    text-align: center;
+    opacity: 0.3;
+  }
+
+  .detail-empty svg { width: 48px; height: 48px; margin-bottom: 1rem; }
+  .detail-empty p { font-size: 0.82rem; color: rgba(240,236,224,0.6); max-width: 200px; line-height: 1.6; }
+
+  /* Detail content */
+  .detail-content { display: none; animation: fadeUp 0.35s ease forwards; }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .detail-header {
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.12);
+    margin-bottom: 1.8rem;
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 1rem;
+  }
+
+  .detail-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.6rem;
+    font-weight: 300;
+    line-height: 1.05;
+    margin-bottom: 0.3rem;
+  }
+
+  .detail-latin {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: rgba(240,236,224,0.4);
+    margin-bottom: 0.6rem;
+  }
+
+  .detail-family {
+    font-size: 0.7rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: rgba(240,236,224,0.35);
+  }
+
+  .detail-badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-top: 0.8rem; }
+
+  .detail-badge {
+    font-size: 0.68rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.75rem;
+  }
+
+  .detail-badge.potent   { border: 0.5px solid rgba(201,168,76,0.5); color: var(--gold); }
+  .detail-badge.common   { border: 0.5px solid rgba(107,163,104,0.4); color: var(--leaf); }
+  .detail-badge.caution  { border: 0.5px solid rgba(200,100,80,0.4); color: #d48a7a; }
+  .detail-badge.edible   { border: 0.5px solid rgba(100,170,200,0.4); color: #7ac0d4; }
+
+  /* Sections */
+  .detail-section {
+    margin-bottom: 2rem;
+    padding-bottom: 2rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.08);
+  }
+
+  .detail-section:last-child { border-bottom: none; margin-bottom: 0; }
+
+  .detail-section-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    margin-bottom: 1rem;
+  }
+
+  .detail-section p {
+    font-size: 0.88rem;
+    color: rgba(240,236,224,0.68);
+    line-height: 1.8;
+  }
+
+  /* Uses grid */
+  .uses-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.8rem;
+    margin-top: 0.5rem;
+  }
+
+  .use-card {
+    background: rgba(20,36,21,0.5);
+    border: 0.5px solid rgba(143,176,138,0.15);
+    padding: 1rem;
+  }
+
+  .use-card-title {
+    font-size: 0.75rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin-bottom: 0.4rem;
+  }
+
+  .use-card-desc {
+    font-size: 0.78rem;
+    color: rgba(240,236,224,0.5);
+    line-height: 1.6;
+  }
+
+  /* Preparation methods */
+  .prep-list { list-style: none; margin-top: 0.5rem; }
+
+  .prep-item {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 0.9rem 0;
+    border-bottom: 0.5px solid rgba(143,176,138,0.07);
+  }
+
+  .prep-item:last-child { border-bottom: none; }
+
+  .prep-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.2rem;
+    color: rgba(143,176,138,0.3);
+    line-height: 1;
+    flex-shrink: 0;
+    width: 24px;
+  }
+
+  .prep-body { flex: 1; }
+
+  .prep-method {
+    font-size: 0.8rem;
+    font-weight: 700;
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+    color: var(--cream);
+    margin-bottom: 0.25rem;
+  }
+
+  .prep-desc {
+    font-size: 0.8rem;
+    color: rgba(240,236,224,0.5);
+    line-height: 1.6;
+  }
+
+  /* Compounds */
+  .compound-tags { display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem; }
+
+  .compound-tag {
+    font-size: 0.7rem;
+    letter-spacing: 0.05em;
+    padding: 0.3rem 0.75rem;
+    border: 0.5px solid rgba(100,170,200,0.25);
+    color: #7ac0d4;
+  }
+
+  /* Warning box */
+  .warning-box {
+    background: rgba(180,80,60,0.08);
+    border: 0.5px solid rgba(180,80,60,0.3);
+    padding: 1rem 1.2rem;
+    margin-top: 0.5rem;
+  }
+
+  .warning-box strong {
+    display: block;
+    font-size: 0.65rem;
+    letter-spacing: 0.15em;
+    text-transform: uppercase;
+    color: #d48a7a;
+    margin-bottom: 0.4rem;
+  }
+
+  .warning-box p {
+    font-size: 0.8rem;
+    color: rgba(212,138,122,0.8);
+    line-height: 1.65;
+  }
+
+  /* Safe box */
+  .safe-box {
+    background: rgba(74,124,78,0.08);
+    border: 0.5px solid rgba(74,124,78,0.25);
+    padding: 1rem 1.2rem;
+    margin-top: 0.5rem;
+    font-size: 0.8rem;
+    color: var(--sage);
+    line-height: 1.65;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .page-hero { padding: 2.5rem 1.5rem 2rem; }
+    .search-bar { padding: 1.2rem 1.5rem; }
+    .remedies-main { grid-template-columns: 1fr; }
+    .plant-list { max-height: 260px; position: static; border-right: none; border-bottom: 0.5px solid rgba(143,176,138,0.1); }
+    .remedy-detail { padding: 1.5rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="page">
+
+  <!-- NAV -->
+  <nav>
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+        <path d="M16 2C16 2 8 10 8 18C8 22.4 11.6 26 16 26C20.4 26 24 22.4 24 18C24 10 16 2 16 2Z" fill="#6ba368" opacity="0.7"/>
+        <path d="M16 8C16 8 10 14 10 20C10 23.3 12.7 26 16 26" stroke="#8fb08a" stroke-width="1" fill="none"/>
+        <line x1="16" y1="26" x2="16" y2="30" stroke="#6ba368" stroke-width="1.5"/>
+      </svg>
+      <span class="logo-text">FloraSense</span>
+    </a>
+    <ul class="nav-links">
+      <!--<li><a href="scan.html">Identify</a></li>-->
+      <li><a href="remedies.html" style="color:var(--cream)">Remedies</a></li>
+      <!--<li><a href="rarity.html">Rarity Index</a></li>-->
+      <!--<li><a href="field-guide.html">Field Guide</a></li>-->
+    </ul>
+  </nav>
+
+  <!-- PAGE HERO -->
+  <div class="page-hero">
+    <div class="page-hero-content">
+      <div class="panel-label">Medicinal Plants</div>
+      <h1>Nature's <em>pharmacy.</em></h1>
+      <p>Browse plants by ailment, active compound, or preparation method. Each entry includes traditional uses, evidence-based research, dosage guidance, and safety warnings.</p>
+    </div>
+  </div>
+
+  <!-- SEARCH & FILTERS -->
+  <div class="search-bar">
+    <div class="search-wrap">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+        <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
+      </svg>
+      <input type="text" id="search-input" placeholder="Search plant or ailment… e.g. 'headache', 'nettle', 'anti-inflammatory'">
+    </div>
+    <div class="filter-pills">
+      <button class="filter-pill active" data-filter="all">All</button>
+      <button class="filter-pill" data-filter="pain">Pain Relief</button>
+      <button class="filter-pill" data-filter="anti-inflammatory">Anti-inflammatory</button>
+      <button class="filter-pill" data-filter="digestive">Digestive</button>
+      <button class="filter-pill" data-filter="antimicrobial">Antimicrobial</button>
+      <button class="filter-pill" data-filter="respiratory">Respiratory</button>
+      <button class="filter-pill" data-filter="edible">Edible</button>
+    </div>
+  </div>
+
+  <!-- MAIN -->
+  <div class="remedies-main">
+
+    <!-- LEFT: Plant List -->
+    <div class="plant-list" id="plant-list">
+      <!-- Populated by JS -->
+      <div class="no-results" id="no-results">No plants match your search.</div>
+    </div>
+
+    <!-- RIGHT: Detail Panel -->
+    <div class="remedy-detail">
+
+      <div class="detail-empty" id="detail-empty">
+        <svg viewBox="0 0 48 48" fill="none">
+          <path d="M24 4C24 4 12 16 12 28C12 34.6 17.4 40 24 40C30.6 40 36 34.6 36 28C36 16 24 4 24 4Z" stroke="#6ba368" stroke-width="1.2" fill="none"/>
+          <line x1="24" y1="40" x2="24" y2="44" stroke="#6ba368" stroke-width="1.2"/>
+          <path d="M16 24C16 24 20 20 24 24C28 28 32 24 32 24" stroke="#8fb08a" stroke-width="1" fill="none"/>
+        </svg>
+        <p>Select a plant to explore its medicinal properties</p>
+      </div>
+
+      <div class="detail-content" id="detail-content">
+
+        <div class="detail-header">
+          <div>
+            <div class="detail-name" id="d-name"></div>
+            <div class="detail-latin" id="d-latin"></div>
+            <div class="detail-family" id="d-family"></div>
+            <div class="detail-badges" id="d-badges"></div>
+          </div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Overview</div>
+          <p id="d-overview"></p>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Medicinal Uses</div>
+          <div class="uses-grid" id="d-uses"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Active Compounds</div>
+          <p id="d-compounds-desc"></p>
+          <div class="compound-tags" id="d-compounds"></div>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Preparation Methods</div>
+          <ul class="prep-list" id="d-prep"></ul>
+        </div>
+
+        <div class="detail-section">
+          <div class="detail-section-title">Safety & Dosage</div>
+          <div id="d-safety"></div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>&copy; 2026 FloraScan &mdash; Field Intelligence for the Natural World</span>
+    <span>Privacy &nbsp;&middot;&nbsp; Terms &nbsp;&middot;&nbsp; API</span>
+  </footer>
+
+</div>
+
+<script>
+
+/* ── PLANT DATA ── */
+const plants = [
+  {
+    id: 1,
+    name: 'Stinging Nettle',
+    latin: 'Urtica dioica',
+    family: 'Urticaceae',
+    badges: ['common', 'edible'],
+    filters: ['pain', 'anti-inflammatory', 'digestive', 'edible'],
+    overview: 'One of the most versatile medicinal plants in the world, stinging nettle has been used in traditional medicine for over 2,000 years. Rich in vitamins A, C, K and several B vitamins, as well as iron, calcium, and magnesium. Despite its sting when raw, cooking or drying completely neutralises the formic acid.',
+    uses: [
+      { title: 'Arthritis & Joint Pain', desc: 'Anti-inflammatory compounds reduce swelling and pain in arthritic joints.' },
+      { title: 'Hay Fever', desc: 'Freeze-dried nettle leaf shown to reduce histamine response in clinical trials.' },
+      { title: 'Anaemia', desc: 'High iron content supports red blood cell production.' },
+      { title: 'Urinary Health', desc: 'Acts as a diuretic; used to treat UTIs and benign prostatic hyperplasia (BPH).' },
+      { title: 'Skin Conditions', desc: 'Topical application used for eczema and general inflammation.' },
+      { title: 'Blood Sugar', desc: 'Early research suggests nettle may help regulate blood glucose levels.' },
+    ],
+    compoundsDesc: 'Nettle contains a broad spectrum of bioactive compounds responsible for its wide therapeutic range.',
+    compounds: ['Flavonoids', 'Quercetin', 'Kaempferol', 'Beta-sitosterol', 'Formic acid', 'Histamine', 'Serotonin', 'Caffeic acid', 'Chlorogenic acid'],
+    prep: [
+      { method: 'Tea (Infusion)', desc: 'Steep 1–2 tsp dried leaf in boiling water for 10 minutes. Drink 2–3 cups daily for hay fever or joint support.' },
+      { method: 'Tincture', desc: 'Standard 1:5 tincture in 25% alcohol. Take 2–4ml three times daily.' },
+      { method: 'Cooked Leaf', desc: 'Young leaves blanched or sautéed like spinach. Sting neutralised by heat. High nutritional value.' },
+      { method: 'Capsule (Freeze-dried)', desc: '300–600mg of freeze-dried leaf twice daily. Best form for hay fever treatment.' },
+      { method: 'Topical Compress', desc: 'Strong tea applied to cloth and held on arthritic joints for 10–15 minutes.' },
+    ],
+    warning: false,
+    safetyNote: 'Generally very safe. Avoid during pregnancy in medicinal doses. May interact with blood thinners, diuretics, and diabetes medication. The sting from fresh plant is temporary and harmless — wash with soap and water.',
+  },
+  {
+    id: 2,
+    name: 'Elderflower',
+    latin: 'Sambucus nigra',
+    family: 'Adoxaceae',
+    badges: ['common', 'potent'],
+    filters: ['respiratory', 'anti-inflammatory', 'antimicrobial'],
+    overview: 'The elder tree has been revered in European folk medicine for centuries. Both the flower and berry are used medicinally. Elderflower is particularly effective for upper respiratory infections and fever reduction, while elderberry is one of the most studied plants for immune support.',
+    uses: [
+      { title: 'Cold & Flu', desc: 'Reduces duration and severity of colds. Clinical trials support elderberry syrup efficacy.' },
+      { title: 'Fever Reduction', desc: 'Diaphoretic properties promote sweating, helping break fevers naturally.' },
+      { title: 'Sinusitis', desc: 'Anti-catarrhal action clears mucous membranes and sinus congestion.' },
+      { title: 'Immune Stimulation', desc: 'Stimulates cytokine production, activating the immune response.' },
+      { title: 'Anti-viral', desc: 'Flavonoids shown to bind to and prevent entry of influenza viruses into cells.' },
+    ],
+    compoundsDesc: 'Elderflower and elderberry contain distinct but complementary active compounds with antiviral and immunomodulatory properties.',
+    compounds: ['Rutin', 'Quercetin', 'Kaempferol', 'Chlorogenic acid', 'Sambucin', 'Anthocyanins (berry)', 'Essential oils', 'Tannins'],
+    prep: [
+      { method: 'Elderflower Tea', desc: 'Steep 2 tsp fresh or 1 tsp dried flower heads in hot water for 10 min. For fever and sinus relief.' },
+      { method: 'Elderberry Syrup', desc: 'Simmer 1 cup dried berries in 3 cups water until reduced by half. Strain, add honey. 1 tbsp daily preventatively, 1 tbsp 4x daily when ill.' },
+      { method: 'Tincture', desc: '1:5 in 25% alcohol. 4–5ml up to 4 times daily during acute infection.' },
+      { method: 'Steam Inhalation', desc: 'Add elderflower to hot water and inhale steam under a towel for sinus congestion.' },
+    ],
+    warning: true,
+    safetyNote: 'Raw elderberries, bark, leaves and roots contain sambunigrin, a cyanogenic glycoside — always cook before consumption. Flowers are safe raw. Avoid during autoimmune conditions as immune stimulation may worsen symptoms. Safe in children over 1 year (honey-based syrup not for infants).',
+  },
+  {
+    id: 3,
+    name: 'Yarrow',
+    latin: 'Achillea millefolium',
+    family: 'Asteraceae',
+    badges: ['common'],
+    filters: ['pain', 'anti-inflammatory', 'digestive', 'antimicrobial'],
+    overview: 'Named after the Greek hero Achilles, who reportedly used it to staunch the wounds of soldiers, yarrow is one of the oldest medicinal plants known — with archaeological evidence of use dating back 60,000 years. It remains one of the most versatile herbs in Western herbalism.',
+    uses: [
+      { title: 'Wound Healing', desc: 'Styptic properties rapidly slow bleeding. Traditional field dressing plant.' },
+      { title: 'Fever', desc: 'Diaphoretic — promotes sweating to break fevers, especially when combined with elderflower and peppermint.' },
+      { title: 'Digestive Issues', desc: 'Bitter compounds stimulate bile and digestive enzyme secretion. Used for IBS and bloating.' },
+      { title: 'Menstrual Pain', desc: 'Antispasmodic and uterine tonic properties reduce cramping.' },
+      { title: 'Hypertension', desc: 'Vasodilating effects may gently lower blood pressure.' },
+    ],
+    compoundsDesc: 'Yarrow has a complex chemistry that accounts for its breadth of action across different body systems.',
+    compounds: ['Azulene', 'Camphor', 'Borneol', 'Achilleine', 'Flavonoids', 'Tannins', 'Alkaloids', 'Salicylic acid derivatives'],
+    prep: [
+      { method: 'Tea', desc: 'Steep 1–2 tsp dried herb in boiling water for 15 min. Cover while steeping to retain volatile oils. Drink 3x daily.' },
+      { method: 'Tincture', desc: '1:5 in 40% alcohol. 2–4ml three times daily. Stronger action than tea for internal use.' },
+      { method: 'Fresh Plant Poultice', desc: 'Crush fresh leaves and apply directly to wounds to slow bleeding and prevent infection.' },
+      { method: 'Sitz Bath', desc: 'Strong yarrow tea added to shallow bath for menstrual cramps or perineal healing.' },
+    ],
+    warning: false,
+    safetyNote: 'Avoid during pregnancy — uterine stimulant. May cause allergic reaction in those sensitive to the Asteraceae family (ragweed, chrysanthemum). Long-term use may cause photosensitivity. Do not use with blood thinning medication.',
+  },
+  {
+    id: 4,
+    name: 'Valerian',
+    latin: 'Valeriana officinalis',
+    family: 'Caprifoliaceae',
+    badges: ['potent'],
+    filters: ['pain'],
+    overview: 'Valerian root has been used as a sedative and anxiolytic since ancient Greece and Rome. Hippocrates described its properties and Galen prescribed it for insomnia. It remains one of the most widely sold herbal supplements in Europe and North America for sleep disorders.',
+    uses: [
+      { title: 'Insomnia', desc: 'Reduces sleep latency (time to fall asleep) and improves sleep quality without morning grogginess.' },
+      { title: 'Anxiety', desc: 'GABAergic activity produces mild anxiolytic effect similar to benzodiazepines but without dependency risk.' },
+      { title: 'Muscle Tension', desc: 'Antispasmodic properties relieve tension headaches and muscle cramps.' },
+      { title: 'Menstrual Cramps', desc: 'Smooth muscle relaxant reduces uterine cramping.' },
+      { title: 'Restlessness', desc: 'Used in children for hyperactivity and nervous restlessness (in appropriate doses).' },
+    ],
+    compoundsDesc: 'Valerenic acid is the primary active compound, though synergy between multiple constituents is believed to produce the full sedative effect.',
+    compounds: ['Valerenic acid', 'Isovaleric acid', 'Valeranone', 'GABA', 'Linarin', 'Hesperidin', 'Glutamine'],
+    prep: [
+      { method: 'Tea (Decoction)', desc: 'Simmer 1 tsp dried root in 250ml water for 15 min. Drink 30–60 min before bed. Taste is strong and earthy.' },
+      { method: 'Tincture', desc: '1:5 in 40–60% alcohol. 3–5ml in warm water 45 min before sleep. Most effective form.' },
+      { method: 'Capsule', desc: '300–600mg standardised extract (0.8% valerenic acid) 1 hour before bed. Effects build over 2–4 weeks of consistent use.' },
+      { method: 'Bath', desc: 'Add strong valerian tea or 10 drops essential oil to bathwater for nervous tension relief.' },
+    ],
+    warning: true,
+    safetyNote: 'Do not combine with alcohol, benzodiazepines, or other sedatives. May cause vivid dreams or next-day grogginess in some people. Not recommended during pregnancy or breastfeeding. Paradoxical stimulant effect reported in a small number of users. Stop use 2 weeks before surgery.',
+  },
+  {
+    id: 5,
+    name: 'Peppermint',
+    latin: 'Mentha × piperita',
+    family: 'Lamiaceae',
+    badges: ['common', 'edible'],
+    filters: ['digestive', 'pain', 'respiratory'],
+    overview: 'A hybrid mint species with one of the highest concentrations of menthol of any plant. Peppermint is among the most researched herbal medicines, with strong clinical evidence for digestive complaints and tension headaches. Its oil is among the top five best-selling herbal products worldwide.',
+    uses: [
+      { title: 'IBS', desc: 'Enteric-coated peppermint oil capsules are clinically proven to reduce IBS symptoms including cramping and bloating.' },
+      { title: 'Tension Headache', desc: 'Topical peppermint oil as effective as paracetamol for tension headaches in clinical trials.' },
+      { title: 'Nausea', desc: 'Inhalation or oral use reduces nausea from travel sickness, chemotherapy, and post-operative recovery.' },
+      { title: 'Congestion', desc: 'Menthol activates cold receptors, producing a decongestant sensation in nasal passages.' },
+      { title: 'Indigestion', desc: 'Relaxes smooth muscle of the GI tract, relieving gas, bloating and dyspepsia.' },
+    ],
+    compoundsDesc: 'Menthol is the dominant and most pharmacologically active compound, responsible for the majority of peppermints therapeutic and sensory effects.',
+    compounds: ['Menthol', 'Menthone', 'Menthyl acetate', 'Cineole', 'Limonene', 'Rosmarinic acid', 'Flavonoids'],
+    prep: [
+      { method: 'Tea', desc: 'Steep 1 tbsp fresh or 1 tsp dried leaf for 10 min. Cover to retain volatile oils. Drink after meals for digestion.' },
+      { method: 'Enteric-coated Capsule', desc: '0.2ml peppermint oil per capsule, 1–2 capsules 3x daily before meals. Only form proven effective for IBS — standard capsules dissolve too early.' },
+      { method: 'Topical Oil', desc: 'Dilute essential oil to 10% in carrier oil. Apply to temples and forehead for headaches. Keep away from eyes.' },
+      { method: 'Steam Inhalation', desc: 'Add 3–5 drops essential oil to hot water. Inhale for 5–10 min for congestion.' },
+    ],
+    warning: false,
+    safetyNote: 'Avoid applying essential oil neat to skin — always dilute. Do not use on or near the face of infants or young children (menthol can cause respiratory distress). May worsen acid reflux if taken without enteric coating. Avoid in cases of gallstones.',
+  },
+  {
+    id: 6,
+    name: 'Turmeric',
+    latin: 'Curcuma longa',
+    family: 'Zingiberaceae',
+    badges: ['potent', 'edible'],
+    filters: ['anti-inflammatory', 'pain', 'digestive'],
+    overview: 'Turmeric has been used in Ayurvedic and Chinese medicine for over 4,000 years. Curcumin, its primary bioactive compound, is one of the most extensively studied natural substances with over 3,000 published studies. Its anti-inflammatory potency rivals many pharmaceutical drugs, without the same side effect profile.',
+    uses: [
+      { title: 'Chronic Inflammation', desc: 'Curcumin blocks NF-kB, a key molecule that activates genes related to inflammation.' },
+      { title: 'Osteoarthritis', desc: 'Multiple clinical trials show curcumin reduces pain and improves function comparably to ibuprofen.' },
+      { title: 'Digestive Health', desc: 'Stimulates bile production, supports liver function, and soothes intestinal inflammation.' },
+      { title: 'Brain Health', desc: 'Increases BDNF (brain-derived neurotrophic factor), linked to improved memory and reduced depression risk.' },
+      { title: 'Cardiovascular', desc: 'Improves endothelial function and reduces LDL oxidation.' },
+    ],
+    compoundsDesc: 'Curcuminoids are the primary active group. Bioavailability is naturally low but dramatically increased by piperine (black pepper) or lipid formulations.',
+    compounds: ['Curcumin', 'Bisdemethoxycurcumin', 'Demethoxycurcumin', 'Ar-turmerone', 'Zingiberene', 'Beta-carotene'],
+    prep: [
+      { method: 'Golden Milk', desc: '1 tsp turmeric powder + pinch black pepper + warm milk (dairy or plant-based) + honey. The fat and piperine dramatically increase absorption.' },
+      { method: 'Capsule (with piperine)', desc: '500–1000mg curcumin with 5–20mg piperine per dose, 2–3x daily with food. Most reliable therapeutic dose.' },
+      { method: 'Cooking', desc: 'Add liberally to curries, soups, and rice. Always combine with black pepper and a fat source. Chronic low-dose dietary intake provides cumulative benefit.' },
+      { method: 'Tincture', desc: '1:5 in 70% alcohol. 2–4ml three times daily. Alcohol extraction improves curcumin solubility.' },
+    ],
+    warning: false,
+    safetyNote: 'High doses may cause nausea or diarrhoea. Avoid therapeutic doses during pregnancy. May enhance the effect of blood thinners — monitor if on warfarin. Gallbladder disease: consult a doctor as turmeric increases bile production. Generally very safe at dietary levels.',
+  },
+];
+
+/* ── STATE ── */
+let activeFilter = 'all';
+let searchQuery = '';
+let selectedId = null;
+
+/* ── RENDER LIST ── */
+function renderList() {
+  const list = document.getElementById('plant-list');
+  const noResults = document.getElementById('no-results');
+
+  const filtered = plants.filter(p => {
+    const matchFilter = activeFilter === 'all' || p.filters.includes(activeFilter);
+    const q = searchQuery.toLowerCase();
+    const matchSearch = !q ||
+      p.name.toLowerCase().includes(q) ||
+      p.latin.toLowerCase().includes(q) ||
+      p.uses.some(u => u.title.toLowerCase().includes(q) || u.desc.toLowerCase().includes(q)) ||
+      p.filters.some(f => f.includes(q));
+    return matchFilter && matchSearch;
+  });
+
+  // Remove existing items
+  list.querySelectorAll('.plant-list-item').forEach(el => el.remove());
+
+  if (filtered.length === 0) {
+    noResults.style.display = 'block';
+    return;
+  }
+
+  noResults.style.display = 'none';
+
+  filtered.forEach(p => {
+    const item = document.createElement('div');
+    item.className = 'plant-list-item' + (p.id === selectedId ? ' active' : '');
+    item.dataset.id = p.id;
+
+    const badgeType = p.badges.includes('caution') ? 'caution' : p.badges.includes('potent') ? 'potent' : 'common';
+    const badgeLabel = p.badges.includes('caution') ? 'Caution' : p.badges.includes('potent') ? 'Potent' : 'Common';
+
+    item.innerHTML = `
+      <div>
+        <div class="pli-name">${p.name}</div>
+        <div class="pli-latin">${p.latin}</div>
+      </div>
+      <span class="pli-badge ${badgeType}">${badgeLabel}</span>
+    `;
+    item.addEventListener('click', () => selectPlant(p.id));
+    list.insertBefore(item, noResults);
+  });
+}
+
+/* ── SELECT PLANT ── */
+function selectPlant(id) {
+  selectedId = id;
+  const p = plants.find(x => x.id === id);
+  if (!p) return;
+
+  // Update active state
+  document.querySelectorAll('.plant-list-item').forEach(el => {
+    el.classList.toggle('active', parseInt(el.dataset.id) === id);
+  });
+
+  // Populate detail
+  document.getElementById('d-name').textContent    = p.name;
+  document.getElementById('d-latin').textContent   = p.latin;
+  document.getElementById('d-family').textContent  = 'Family: ' + p.family;
+  document.getElementById('d-overview').textContent = p.overview;
+  document.getElementById('d-compounds-desc').textContent = p.compoundsDesc;
+
+  // Badges
+  document.getElementById('d-badges').innerHTML = p.badges.map(b =>
+    `<span class="detail-badge ${b}">${b.charAt(0).toUpperCase() + b.slice(1)}</span>`
+  ).join('');
+
+  // Uses
+  document.getElementById('d-uses').innerHTML = p.uses.map(u =>
+    `<div class="use-card"><div class="use-card-title">${u.title}</div><div class="use-card-desc">${u.desc}</div></div>`
+  ).join('');
+
+  // Compounds
+  document.getElementById('d-compounds').innerHTML = p.compounds.map(c =>
+    `<span class="compound-tag">${c}</span>`
+  ).join('');
+
+  // Prep
+  document.getElementById('d-prep').innerHTML = p.prep.map((pr, i) =>
+    `<li class="prep-item">
+      <span class="prep-num">0${i + 1}</span>
+      <div class="prep-body">
+        <div class="prep-method">${pr.method}</div>
+        <div class="prep-desc">${pr.desc}</div>
+      </div>
+    </li>`
+  ).join('');
+
+  // Safety
+  const safetyEl = document.getElementById('d-safety');
+  if (p.warning) {
+    safetyEl.innerHTML = `<div class="warning-box"><strong>⚠ Safety Warning</strong><p>${p.safetyNote}</p></div>`;
+  } else {
+    safetyEl.innerHTML = `<div class="safe-box">${p.safetyNote}</div>`;
+  }
+
+  // Show detail
+  document.getElementById('detail-empty').style.display   = 'none';
+  const content = document.getElementById('detail-content');
+  content.style.display = 'none';
+  void content.offsetWidth; // reset animation
+  content.style.display = 'block';
+}
+
+/* ── FILTERS ── */
+document.querySelectorAll('.filter-pill').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.filter-pill').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    activeFilter = btn.dataset.filter;
+    renderList();
+  });
+});
+
+/* ── SEARCH ── */
+document.getElementById('search-input').addEventListener('input', e => {
+  searchQuery = e.target.value;
+  renderList();
+});
+
+/* ── NAV SCROLL ── */
+const nav = document.querySelector('nav');
+window.addEventListener('scroll', () => {
+  nav.style.background     = window.scrollY > 40 ? 'rgba(13,26,14,0.95)' : '';
+  nav.style.backdropFilter = window.scrollY > 40 ? 'blur(12px)' : '';
+});
+
+/* ── INIT ── */
+renderList();
+
+</script>
+</body>
+</html>

@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloraSense — Identify a Plant</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+
+  /* ── PAGE LAYOUT ── */
+  .scan-page {
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    background: #0d1a0e;
+  }
+
+  .scan-main {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+    padding: 3rem 4rem;
+    align-items: start;
+  }
+
+  /* ── LEFT PANEL — Upload / Camera ── */
+  .upload-panel {
+    padding-right: 3rem;
+    border-right: 0.5px solid rgba(143,176,138,0.12);
+  }
+
+  .panel-label {
+    font-size: 0.68rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+
+  .panel-label::before {
+    content: '';
+    width: 28px;
+    height: 1px;
+    background: var(--leaf);
+  }
+
+  .upload-panel h2 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2.4rem;
+    font-weight: 300;
+    line-height: 1.1;
+    margin-bottom: 0.8rem;
+  }
+
+  .upload-panel h2 em {
+    font-style: italic;
+    color: var(--sage);
+  }
+
+  .upload-panel p.sub {
+    font-size: 0.85rem;
+    color: rgba(240,236,224,0.5);
+    line-height: 1.7;
+    margin-bottom: 2rem;
+  }
+
+  /* ── DROP ZONE ── */
+  .drop-zone {
+    border: 0.5px dashed rgba(143,176,138,0.4);
+    background: rgba(20,36,21,0.4);
+    aspect-ratio: 4/3;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.25s;
+    position: relative;
+    overflow: hidden;
+    margin-bottom: 1.2rem;
+  }
+
+  .drop-zone:hover,
+  .drop-zone.dragover {
+    border-color: var(--leaf);
+    background: rgba(74,124,78,0.1);
+  }
+
+  .drop-zone.has-image {
+    border-style: solid;
+    border-color: rgba(143,176,138,0.3);
+  }
+
+  .drop-zone-icon {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 1rem;
+    opacity: 0.4;
+  }
+
+  .drop-zone-text {
+    font-size: 0.82rem;
+    color: rgba(240,236,224,0.45);
+    text-align: center;
+    line-height: 1.6;
+  }
+
+  .drop-zone-text span {
+    color: var(--leaf);
+    border-bottom: 0.5px solid var(--leaf);
+    cursor: pointer;
+  }
+
+  /* Preview image inside drop zone */
+  .preview-img {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: none;
+  }
+
+  /* Scan corner overlays on preview */
+  .dz-corner {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    border-color: var(--leaf);
+    border-style: solid;
+    border-width: 0;
+    opacity: 0;
+    transition: opacity 0.3s;
+  }
+
+  .drop-zone.has-image .dz-corner { opacity: 1; }
+  .dz-corner.tl { top: 10px; left: 10px; border-top-width: 2px; border-left-width: 2px; }
+  .dz-corner.tr { top: 10px; right: 10px; border-top-width: 2px; border-right-width: 2px; }
+  .dz-corner.bl { bottom: 10px; left: 10px; border-bottom-width: 2px; border-left-width: 2px; }
+  .dz-corner.br { bottom: 10px; right: 10px; border-bottom-width: 2px; border-right-width: 2px; }
+
+  /* Scan animation line */
+  .dz-scan-line {
+    position: absolute;
+    left: 0; right: 0;
+    height: 2px;
+    background: linear-gradient(to right, transparent, var(--leaf), transparent);
+    opacity: 0;
+    top: 0;
+  }
+
+  .scanning .dz-scan-line {
+    animation: dzScan 1.8s ease-in-out infinite;
+    opacity: 1;
+  }
+
+  @keyframes dzScan {
+    0%   { top: 5%; }
+    100% { top: 95%; }
+  }
+
+  /* Hidden file input */
+  #file-input { display: none; }
+
+  /* ── ACTION ROW ── */
+  .action-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.8rem;
+    margin-bottom: 1.5rem;
+  }
+
+  .btn-action {
+    background: transparent;
+    border: 0.5px solid rgba(143,176,138,0.3);
+    color: rgba(240,236,224,0.7);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.75rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.75rem 1rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .btn-action:hover {
+    border-color: var(--leaf);
+    color: var(--cream);
+    background: rgba(74,124,78,0.1);
+  }
+
+  .btn-action svg { width: 16px; height: 16px; flex-shrink: 0; }
+
+  /* ── SCAN BUTTON ── */
+  .btn-scan {
+    width: 100%;
+    background: var(--cream);
+    color: #0d1a0e;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.85rem;
+    font-weight: 700;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    padding: 1.1rem 2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    opacity: 0.35;
+    pointer-events: none;
+  }
+
+  .btn-scan.active {
+    opacity: 1;
+    pointer-events: all;
+  }
+
+  .btn-scan.active:hover { background: var(--gold); }
+
+  .btn-scan.loading {
+    background: rgba(240,236,224,0.15);
+    color: var(--cream);
+    pointer-events: none;
+  }
+
+  /* Spinner */
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(13,26,14,0.3);
+    border-top-color: #0d1a0e;
+    border-radius: 50%;
+    animation: spin 0.7s linear infinite;
+    display: none;
+  }
+
+  .btn-scan.loading .spinner { display: block; border-top-color: var(--cream); border-color: rgba(240,236,224,0.2); }
+  .btn-scan.loading .btn-scan-text { opacity: 0.6; }
+
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* ── RIGHT PANEL — Results ── */
+  .results-panel {
+    padding-left: 3rem;
+    min-height: 400px;
+  }
+
+  /* Empty state */
+  .results-empty {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-height: 400px;
+    text-align: center;
+    opacity: 0.35;
+  }
+
+  .results-empty svg {
+    width: 52px;
+    height: 52px;
+    margin-bottom: 1rem;
+  }
+
+  .results-empty p {
+    font-size: 0.82rem;
+    color: rgba(240,236,224,0.6);
+    line-height: 1.6;
+    max-width: 220px;
+  }
+
+  /* Result card */
+  .result-card {
+    display: none;
+    animation: fadeUp 0.4s ease forwards;
+  }
+
+  @keyframes fadeUp {
+    from { opacity: 0; transform: translateY(16px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  .result-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.12);
+  }
+
+  .result-name {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 2rem;
+    font-weight: 400;
+    line-height: 1.1;
+    margin-bottom: 0.3rem;
+  }
+
+  .result-latin {
+    font-family: 'Cormorant Garamond', serif;
+    font-style: italic;
+    font-size: 1rem;
+    color: rgba(240,236,224,0.45);
+  }
+
+  .confidence-badge {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.35rem 0.8rem;
+    border: 0.5px solid var(--leaf);
+    color: var(--leaf);
+    white-space: nowrap;
+  }
+
+  /* Result sections */
+  .result-section {
+    margin-bottom: 1.5rem;
+    padding-bottom: 1.5rem;
+    border-bottom: 0.5px solid rgba(143,176,138,0.1);
+  }
+
+  .result-section:last-child {
+    border-bottom: none;
+    margin-bottom: 0;
+  }
+
+  .result-section-title {
+    font-size: 0.65rem;
+    letter-spacing: 0.2em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    margin-bottom: 0.8rem;
+  }
+
+  .result-section p {
+    font-size: 0.85rem;
+    color: rgba(240,236,224,0.7);
+    line-height: 1.75;
+  }
+
+  /* Rarity pill */
+  .rarity-row {
+    display: flex;
+    align-items: center;
+    gap: 0.8rem;
+    flex-wrap: wrap;
+  }
+
+  .rarity-pill {
+    font-size: 0.7rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.3rem 0.9rem;
+    font-weight: 700;
+  }
+
+  .rarity-pill.common    { background: rgba(107,163,104,0.15); color: var(--leaf); border: 0.5px solid rgba(107,163,104,0.3); }
+  .rarity-pill.uncommon  { background: rgba(201,168,76,0.12);  color: var(--gold); border: 0.5px solid rgba(201,168,76,0.3); }
+  .rarity-pill.rare      { background: rgba(100,140,200,0.12); color: #7aa0d4;     border: 0.5px solid rgba(100,140,200,0.3); }
+  .rarity-pill.endangered{ background: rgba(200,80,80,0.12);   color: #d47a7a;     border: 0.5px solid rgba(200,80,80,0.3); }
+
+  /* Tags */
+  .tag-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+    margin-top: 0.5rem;
+  }
+
+  .tag {
+    font-size: 0.7rem;
+    letter-spacing: 0.06em;
+    padding: 0.3rem 0.7rem;
+    border: 0.5px solid rgba(143,176,138,0.2);
+    color: rgba(240,236,224,0.55);
+  }
+
+  /* Disease alert */
+  .disease-alert {
+    background: rgba(180,80,60,0.1);
+    border: 0.5px solid rgba(180,80,60,0.3);
+    padding: 0.8rem 1rem;
+    font-size: 0.8rem;
+    color: #d4957a;
+    line-height: 1.6;
+    margin-top: 0.5rem;
+  }
+
+  .disease-alert strong {
+    display: block;
+    font-size: 0.68rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    margin-bottom: 0.3rem;
+  }
+
+  .healthy-note {
+    background: rgba(74,124,78,0.1);
+    border: 0.5px solid rgba(74,124,78,0.25);
+    padding: 0.8rem 1rem;
+    font-size: 0.8rem;
+    color: var(--sage);
+    margin-top: 0.5rem;
+  }
+
+  /* Action links at bottom of result */
+  .result-actions {
+    display: flex;
+    gap: 1rem;
+    margin-top: 1.5rem;
+    padding-top: 1.5rem;
+    border-top: 0.5px solid rgba(143,176,138,0.12);
+  }
+
+  .result-link {
+    font-size: 0.75rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--leaf);
+    text-decoration: none;
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    transition: color 0.2s;
+  }
+
+  .result-link:hover { color: var(--sage); }
+
+  /* ── CAMERA MODAL ── */
+  .camera-modal {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,0.85);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+
+  .camera-modal.open { display: flex; }
+
+  .camera-box {
+    background: #0d1a0e;
+    border: 0.5px solid rgba(143,176,138,0.2);
+    padding: 1.5rem;
+    width: 560px;
+    max-width: 90vw;
+  }
+
+  .camera-box h3 {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.4rem;
+    font-weight: 400;
+    margin-bottom: 1rem;
+  }
+
+  #camera-feed {
+    width: 100%;
+    aspect-ratio: 4/3;
+    object-fit: cover;
+    background: #000;
+    display: block;
+    margin-bottom: 1rem;
+  }
+
+  .camera-controls {
+    display: flex;
+    gap: 0.8rem;
+  }
+
+  .btn-capture {
+    flex: 1;
+    background: var(--cream);
+    color: #0d1a0e;
+    border: none;
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.85rem;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
+
+  .btn-capture:hover { background: var(--gold); }
+
+  .btn-close-cam {
+    background: transparent;
+    border: 0.5px solid rgba(143,176,138,0.3);
+    color: rgba(240,236,224,0.6);
+    font-family: 'Syne', sans-serif;
+    font-size: 0.78rem;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    padding: 0.85rem 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .btn-close-cam:hover { border-color: rgba(240,236,224,0.4); color: var(--cream); }
+
+  /* ── TIPS STRIP ── */
+  .tips-strip {
+    border-top: 0.5px solid rgba(143,176,138,0.1);
+    padding: 1.5rem 4rem;
+    display: flex;
+    gap: 3rem;
+    max-width: 1300px;
+    margin: 0 auto;
+    width: 100%;
+  }
+
+  .tip {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    flex: 1;
+  }
+
+  .tip-num {
+    font-family: 'Cormorant Garamond', serif;
+    font-size: 1.3rem;
+    color: rgba(143,176,138,0.25);
+    line-height: 1;
+    flex-shrink: 0;
+  }
+
+  .tip-text {
+    font-size: 0.75rem;
+    color: rgba(240,236,224,0.4);
+    line-height: 1.6;
+  }
+
+  /* ── RESPONSIVE ── */
+  @media (max-width: 900px) {
+    .scan-main { grid-template-columns: 1fr; padding: 2rem 1.5rem; }
+    .upload-panel { padding-right: 0; border-right: none; border-bottom: 0.5px solid rgba(143,176,138,0.12); padding-bottom: 2.5rem; margin-bottom: 2.5rem; }
+    .results-panel { padding-left: 0; }
+    .tips-strip { padding: 1.5rem; flex-direction: column; gap: 1rem; }
+  }
+</style>
+</head>
+<body>
+
+<div class="scan-page">
+
+  <!-- NAV -->
+  <nav>
+    <a href="../index.html" class="logo">
+      <svg class="logo-icon" viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M16 2C16 2 8 10 8 18C8 22.4 11.6 26 16 26C20.4 26 24 22.4 24 18C24 10 16 2 16 2Z" fill="#6ba368" opacity="0.7"/>
+        <path d="M16 8C16 8 10 14 10 20C10 23.3 12.7 26 16 26" stroke="#8fb08a" stroke-width="1" fill="none"/>
+        <line x1="16" y1="26" x2="16" y2="30" stroke="#6ba368" stroke-width="1.5"/>
+      </svg>
+      <span class="logo-text">FloraSense</span>
+    </a>
+    <ul class="nav-links">
+      <li><a href="scan.html" style="color:var(--cream)">Identify</a></li>
+      <!--<li><a href="remedies.html">Remedies</a></li>-->
+      <!--<li><a href="rarity.html">Rarity Index</a></li>-->
+      <!--<li><a href="field-guide.html">Field Guide</a></li>-->
+    </ul>
+    <button class="btn-nav" onclick="document.getElementById('file-input').click()">Upload Plant</button>
+  </nav>
+
+  <!-- MAIN CONTENT -->
+  <div class="scan-main">
+
+    <!-- LEFT: Upload Panel -->
+    <div class="upload-panel">
+      <div class="panel-label">Plant Identification</div>
+      <h2>Show us<br>what you <em>found.</em></h2>
+      <p class="sub">Upload a clear photo of a leaf, flower, bark, or whole plant. Works best with natural lighting and a single subject in frame.</p>
+
+      <!-- Drop Zone -->
+      <div class="drop-zone" id="drop-zone">
+        <img class="preview-img" id="preview-img" alt="Preview" />
+        <div class="dz-scan-line" id="dz-scan-line"></div>
+        <div class="dz-corner tl"></div>
+        <div class="dz-corner tr"></div>
+        <div class="dz-corner bl"></div>
+        <div class="dz-corner br"></div>
+
+        <svg class="drop-zone-icon" id="dz-icon" viewBox="0 0 48 48" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect x="8" y="8" width="32" height="32" rx="2" stroke="#6ba368" stroke-width="1.5"/>
+          <circle cx="18" cy="19" r="3" stroke="#6ba368" stroke-width="1.5"/>
+          <path d="M8 32 L16 24 L22 30 L30 20 L40 32" stroke="#6ba368" stroke-width="1.5" stroke-linejoin="round"/>
+          <path d="M24 12 L24 6 M24 6 L21 9 M24 6 L27 9" stroke="#8fb08a" stroke-width="1.2" stroke-linecap="round"/>
+        </svg>
+
+        <div class="drop-zone-text" id="dz-text">
+          Drag & drop a photo here<br>or <span onclick="document.getElementById('file-input').click()">browse your files</span>
+        </div>
+      </div>
+
+      <input type="file" id="file-input" accept="image/*">
+
+      <!-- Action Buttons -->
+      <div class="action-row">
+        <button class="btn-action" id="btn-camera">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M23 19a2 2 0 01-2 2H3a2 2 0 01-2-2V8a2 2 0 012-2h4l2-3h6l2 3h4a2 2 0 012 2z"/>
+            <circle cx="12" cy="13" r="4"/>
+          </svg>
+          Use Camera
+        </button>
+        <button class="btn-action" id="btn-clear">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/>
+          </svg>
+          Clear Image
+        </button>
+      </div>
+
+      <!-- Scan Button -->
+      <button class="btn-scan" id="btn-scan">
+        <div class="spinner"></div>
+        <span class="btn-scan-text">Identify This Plant</span>
+      </button>
+    </div>
+
+    <!-- RIGHT: Results Panel -->
+    <div class="results-panel">
+      <div class="panel-label">Analysis Result</div>
+
+      <!-- Empty State -->
+      <div class="results-empty" id="results-empty">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <circle cx="26" cy="26" r="25" stroke="#6ba368" stroke-width="1" stroke-dasharray="4 3"/>
+          <path d="M26 14C26 14 18 21 18 27C18 31.4 21.6 35 26 35C30.4 35 34 31.4 34 27C34 21 26 14 26 14Z" stroke="#6ba368" stroke-width="1.2" fill="none"/>
+          <line x1="26" y1="35" x2="26" y2="39" stroke="#6ba368" stroke-width="1.2"/>
+        </svg>
+        <p>Upload or capture a plant photo to begin identification</p>
+      </div>
+
+      <!-- Loading State -->
+      <div class="results-empty" id="results-loading" style="display:none;">
+        <svg viewBox="0 0 52 52" fill="none" xmlns="http://www.w3.org/2000/svg" style="animation: spin 1.5s linear infinite;">
+          <circle cx="26" cy="26" r="22" stroke="#6ba368" stroke-width="1.5" stroke-dasharray="60 30" stroke-linecap="round"/>
+        </svg>
+        <p style="margin-top:1rem;">Analysing your plant…</p>
+      </div>
+
+      <!-- Result Card (shown after scan) -->
+      <div class="result-card" id="result-card">
+
+        <div class="result-header">
+          <div>
+            <div class="result-name" id="res-name">—</div>
+            <div class="result-latin" id="res-latin">—</div>
+          </div>
+          <div class="confidence-badge" id="res-confidence">—% match</div>
+        </div>
+
+        <!-- Rarity -->
+        <div class="result-section">
+          <div class="result-section-title">Rarity Status</div>
+          <div class="rarity-row">
+            <div class="rarity-pill" id="res-rarity-pill">—</div>
+            <p id="res-rarity-desc" style="font-size:0.82rem; color:rgba(240,236,224,0.55);"></p>
+          </div>
+        </div>
+
+        <!-- Description -->
+        <div class="result-section">
+          <div class="result-section-title">About This Plant</div>
+          <p id="res-description">—</p>
+        </div>
+
+        <!-- Medicinal Value -->
+        <div class="result-section">
+          <div class="result-section-title">Medicinal Uses</div>
+          <p id="res-medicinal">—</p>
+          <div class="tag-row" id="res-tags"></div>
+        </div>
+
+        <!-- Disease / Health -->
+        <div class="result-section">
+          <div class="result-section-title">Plant Health</div>
+          <div id="res-health"></div>
+        </div>
+
+        <!-- Result Actions -->
+        <div class="result-actions">
+          <a href="field-guide.html" class="result-link">View in Field Guide →</a>
+          <a href="remedies.html" class="result-link">See Remedies →</a>
+          <a href="rarity.html" class="result-link">Rarity Details →</a>
+        </div>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- TIPS STRIP -->
+  <div class="tips-strip">
+    <div class="tip">
+      <span class="tip-num">01</span>
+      <span class="tip-text">Use natural daylight. Avoid flash — it flattens detail and washes out colour.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-num">02</span>
+      <span class="tip-text">Capture a single subject. One leaf or flower per photo gives the best result.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-num">03</span>
+      <span class="tip-text">Include both sides of the leaf if possible — the underside often holds key features.</span>
+    </div>
+    <div class="tip">
+      <span class="tip-num">04</span>
+      <span class="tip-text">For diseased plants, photograph the affected area clearly and up close.</span>
+    </div>
+  </div>
+
+  <!-- FOOTER -->
+  <footer>
+    <span>&copy; 2026 FloraSense &mdash; Field Intelligence for the Natural World</span>
+    <span>Privacy &nbsp;&middot;&nbsp; Terms &nbsp;&middot;&nbsp; API</span>
+  </footer>
+
+</div>
+
+<!-- CAMERA MODAL -->
+<div class="camera-modal" id="camera-modal">
+  <div class="camera-box">
+    <h3>Camera Capture</h3>
+    <video id="camera-feed" autoplay playsinline></video>
+    <canvas id="camera-canvas" style="display:none;"></canvas>
+    <div class="camera-controls">
+      <button class="btn-capture" id="btn-capture">Capture Photo</button>
+      <button class="btn-close-cam" id="btn-close-cam">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+  /* ── STATE ── */
+  let currentFile = null;
+  let cameraStream = null;
+
+  const dropZone     = document.getElementById('drop-zone');
+  const fileInput    = document.getElementById('file-input');
+  const previewImg   = document.getElementById('preview-img');
+  const dzIcon       = document.getElementById('dz-icon');
+  const dzText       = document.getElementById('dz-text');
+  const dzScanLine   = document.getElementById('dz-scan-line');
+  const btnScan      = document.getElementById('btn-scan');
+  const btnClear     = document.getElementById('btn-clear');
+  const btnCamera    = document.getElementById('btn-camera');
+  const cameraModal  = document.getElementById('camera-modal');
+  const cameraFeed   = document.getElementById('camera-feed');
+  const cameraCanvas = document.getElementById('camera-canvas');
+  const btnCapture   = document.getElementById('btn-capture');
+  const btnCloseCam  = document.getElementById('btn-close-cam');
+
+  const resultsEmpty   = document.getElementById('results-empty');
+  const resultsLoading = document.getElementById('results-loading');
+  const resultCard     = document.getElementById('result-card');
+
+  /* ── LOAD IMAGE ── */
+  function loadImage(file) {
+    if (!file || !file.type.startsWith('image/')) return;
+    currentFile = file;
+    const url = URL.createObjectURL(file);
+    previewImg.src = url;
+    previewImg.style.display = 'block';
+    dzIcon.style.display = 'none';
+    dzText.style.display = 'none';
+    dropZone.classList.add('has-image');
+    btnScan.classList.add('active');
+  }
+
+  /* ── CLEAR ── */
+  btnClear.addEventListener('click', () => {
+    currentFile = null;
+    previewImg.src = '';
+    previewImg.style.display = 'none';
+    dzIcon.style.display = '';
+    dzText.style.display = '';
+    dropZone.classList.remove('has-image', 'scanning');
+    btnScan.classList.remove('active', 'loading');
+    fileInput.value = '';
+    showEmpty();
+  });
+
+  /* ── FILE INPUT ── */
+  fileInput.addEventListener('change', e => {
+    if (e.target.files[0]) loadImage(e.target.files[0]);
+  });
+
+  /* ── DRAG & DROP ── */
+  dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+  dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+  dropZone.addEventListener('drop', e => {
+    e.preventDefault();
+    dropZone.classList.remove('dragover');
+    const file = e.dataTransfer.files[0];
+    if (file) loadImage(file);
+  });
+  dropZone.addEventListener('click', e => {
+    if (e.target === dropZone || e.target === dzIcon) {
+      fileInput.click();
+    }
+  });
+
+  /* ── CAMERA ── */
+  btnCamera.addEventListener('click', async () => {
+    try {
+      cameraStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: 'environment' } });
+      cameraFeed.srcObject = cameraStream;
+      cameraModal.classList.add('open');
+    } catch {
+      alert('Camera access denied or not available on this device.');
+    }
+  });
+
+  btnCapture.addEventListener('click', () => {
+    cameraCanvas.width  = cameraFeed.videoWidth;
+    cameraCanvas.height = cameraFeed.videoHeight;
+    cameraCanvas.getContext('2d').drawImage(cameraFeed, 0, 0);
+    cameraCanvas.toBlob(blob => {
+      const file = new File([blob], 'camera-capture.jpg', { type: 'image/jpeg' });
+      loadImage(file);
+      closeCamera();
+    }, 'image/jpeg', 0.92);
+  });
+
+  btnCloseCam.addEventListener('click', closeCamera);
+
+  function closeCamera() {
+    if (cameraStream) { cameraStream.getTracks().forEach(t => t.stop()); cameraStream = null; }
+    cameraModal.classList.remove('open');
+  }
+
+  /* ── RESULTS HELPERS ── */
+  function showEmpty()   { resultsEmpty.style.display = 'flex'; resultsLoading.style.display = 'none'; resultCard.style.display = 'none'; }
+  function showLoading() { resultsEmpty.style.display = 'none'; resultsLoading.style.display = 'flex'; resultCard.style.display = 'none'; }
+  function showResult()  { resultsEmpty.style.display = 'none'; resultsLoading.style.display = 'none'; resultCard.style.display = 'block'; }
+
+  /* ── SCAN ── */
+  btnScan.addEventListener('click', async () => {
+    if (!currentFile) return;
+
+    btnScan.classList.add('loading');
+    dropZone.classList.add('scanning');
+    showLoading();
+
+    /* ── DEMO MODE (no API key yet) ──
+       Replace this block with a real API call.
+       See README for Plant.id / iNaturalist integration. */
+    await new Promise(r => setTimeout(r, 2800));
+    const demo = getDemoResult();
+    populateResult(demo);
+    /* ── END DEMO MODE ── */
+
+    btnScan.classList.remove('loading');
+    dropZone.classList.remove('scanning');
+    showResult();
+  });
+
+  /* ── POPULATE RESULT ── */
+  function populateResult(data) {
+    document.getElementById('res-name').textContent        = data.name;
+    document.getElementById('res-latin').textContent       = data.latin;
+    document.getElementById('res-confidence').textContent  = data.confidence + '% match';
+    document.getElementById('res-description').textContent = data.description;
+    document.getElementById('res-medicinal').textContent   = data.medicinal;
+
+    const rarityPill = document.getElementById('res-rarity-pill');
+    rarityPill.textContent  = data.rarity;
+    rarityPill.className    = 'rarity-pill ' + data.rarity.toLowerCase();
+    document.getElementById('res-rarity-desc').textContent = data.rarityDesc;
+
+    const tagRow = document.getElementById('res-tags');
+    tagRow.innerHTML = data.tags.map(t => `<span class="tag">${t}</span>`).join('');
+
+    const health = document.getElementById('res-health');
+    if (data.diseased) {
+      health.innerHTML = `<div class="disease-alert"><strong>Issue Detected</strong>${data.healthNote}</div>`;
+    } else {
+      health.innerHTML = `<div class="healthy-note">${data.healthNote}</div>`;
+    }
+  }
+
+  /* ── DEMO DATA (swap out when API is wired) ── */
+  function getDemoResult() {
+    const plants = [
+      {
+        name: 'Stinging Nettle', latin: 'Urtica dioica', confidence: 94,
+        rarity: 'Common', rarityDesc: 'Widespread across Europe, Asia and North America.',
+        description: 'A perennial herbaceous plant found in moist, nutrient-rich soils near rivers, roadsides and disturbed ground. Distinguished by its toothed leaves covered in hollow, silica-tipped stinging hairs.',
+        medicinal: 'Used for centuries to treat arthritis, anaemia, hay fever and urinary issues. Rich in iron, vitamins A and C, and anti-inflammatory compounds. Young leaves are also edible when cooked.',
+        tags: ['Anti-inflammatory', 'Iron-rich', 'Edible', 'Diuretic', 'Topical pain relief'],
+        diseased: false,
+        healthNote: 'Plant appears healthy. No signs of fungal infection, pest damage or nutrient deficiency detected.'
+      },
+      {
+        name: 'Lady Fern', latin: 'Athyrium filix-femina', confidence: 88,
+        rarity: 'Common', rarityDesc: 'Found widely in temperate forests of the Northern Hemisphere.',
+        description: 'A graceful, arching fern with finely divided fronds. Thrives in shaded, moist woodland environments and is one of the most recognisable ferns in the Northern Hemisphere.',
+        medicinal: 'Historically used in folk medicine as an anthelmintic (anti-worm treatment) and mild pain reliever. The young fronds (fiddleheads) are edible when properly prepared.',
+        tags: ['Anthelmintic', 'Fiddlehead edible', 'Shade tolerant', 'Forest plant'],
+        diseased: true,
+        healthNote: 'Possible rust fungus detected on frond undersides. Treat by removing affected fronds and improving air circulation. Avoid overhead watering.'
+      },
+      {
+        name: 'Ghost Orchid', latin: 'Epipogium aphyllum', confidence: 79,
+        rarity: 'Rare', rarityDesc: 'One of Europe\'s rarest plants. Sporadic and unpredictable in appearance.',
+        description: 'A leafless, mycoheterotrophic orchid that derives nutrients from underground fungi rather than photosynthesis. It can remain dormant underground for years before flowering.',
+        medicinal: 'No established medicinal uses. Primarily of ecological and conservation significance. Protected under law in most of its range.',
+        tags: ['Protected species', 'No harvest', 'Conservation priority', 'Mycoheterotrophic'],
+        diseased: false,
+        healthNote: 'Specimen appears intact. This is a protected species — do not harvest or disturb.'
+      }
+    ];
+    return plants[Math.floor(Math.random() * plants.length)];
+  }
+
+  /* Nav scroll effect */
+  const nav = document.querySelector('nav');
+  window.addEventListener('scroll', () => {
+    nav.style.background    = window.scrollY > 40 ? 'rgba(13,26,14,0.95)' : '';
+    nav.style.backdropFilter = window.scrollY > 40 ? 'blur(12px)' : '';
+  });
+</script>
+
+  <script src="../assets/js/main.js"></script>
+</body>
+</html>

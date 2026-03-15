@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FloraSense — Field Guide</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,600;1,300;1,400&family=Syne:wght@400;500;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/css/style.css">
+<style>
+  .page { min-height:100vh; display:flex; flex-direction:column; background:#0d1a0e; }
+
+  .page-hero { position:relative; padding:3.5rem 4rem 3rem; border-bottom:0.5px solid rgba(143,176,138,0.12); overflow:hidden; }
+  .page-hero::before { content:''; position:absolute; inset:0; background-image:url('../assets/images/forest_elf4.jpeg'); background-size:cover; background-position:center 45%; filter:saturate(1.2) brightness(0.15); z-index:0; }
+  .page-hero-content { position:relative; z-index:1; max-width:1300px; margin:0 auto; width:100%; display:flex; align-items:flex-end; justify-content:space-between; gap:2rem; flex-wrap:wrap; }
+
+  .panel-label { font-size:0.68rem; letter-spacing:0.2em; text-transform:uppercase; color:var(--leaf); margin-bottom:1rem; display:flex; align-items:center; gap:10px; }
+  .panel-label::before { content:''; width:28px; height:1px; background:var(--leaf); }
+
+  .page-hero h1 { font-family:'Cormorant Garamond',serif; font-size:clamp(2.2rem,4vw,3.5rem); font-weight:300; line-height:1.1; margin-bottom:0.8rem; }
+  .page-hero h1 em { font-style:italic; color:var(--sage); }
+  .page-hero p { font-size:0.88rem; color:rgba(240,236,224,0.5); line-height:1.7; max-width:480px; }
+
+  .hero-stats { display:flex; gap:2.5rem; align-items:flex-end; }
+  .hero-stat-num { font-family:'Cormorant Garamond',serif; font-size:2.8rem; font-weight:300; line-height:1; margin-bottom:0.2rem; }
+  .hero-stat-label { font-size:0.65rem; letter-spacing:0.15em; text-transform:uppercase; color:rgba(240,236,224,0.35); }
+
+  .controls { padding:1.5rem 4rem; border-bottom:0.5px solid rgba(143,176,138,0.1); max-width:1300px; margin:0 auto; width:100%; display:flex; gap:1rem; align-items:center; flex-wrap:wrap; }
+
+  .search-wrap { position:relative; flex:1; min-width:220px; }
+  .search-wrap svg { position:absolute; left:14px; top:50%; transform:translateY(-50%); width:16px; height:16px; stroke:rgba(143,176,138,0.5); pointer-events:none; }
+  #search-input { width:100%; background:rgba(20,36,21,0.5); border:0.5px solid rgba(143,176,138,0.2); color:var(--cream); font-family:'Syne',sans-serif; font-size:0.82rem; padding:0.72rem 1rem 0.72rem 2.6rem; outline:none; transition:border-color 0.2s; }
+  #search-input::placeholder { color:rgba(240,236,224,0.3); }
+  #search-input:focus { border-color:var(--leaf); }
+
+  .filter-pills { display:flex; gap:0.5rem; flex-wrap:wrap; }
+  .filter-pill { font-family:'Syne',sans-serif; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; padding:0.42rem 1rem; border:0.5px solid rgba(143,176,138,0.2); color:rgba(240,236,224,0.5); background:transparent; cursor:pointer; transition:all 0.2s; }
+  .filter-pill:hover { border-color:var(--leaf); color:var(--cream); }
+  .filter-pill.active { border-color:var(--leaf); color:var(--leaf); background:rgba(107,163,104,0.1); }
+
+  .sort-select { background:rgba(20,36,21,0.5); border:0.5px solid rgba(143,176,138,0.2); color:rgba(240,236,224,0.7); font-family:'Syne',sans-serif; font-size:0.72rem; letter-spacing:0.06em; padding:0.42rem 0.9rem; cursor:pointer; outline:none; }
+  .sort-select option { background:#0d1a0e; }
+
+  .alpha-bar { padding:0.8rem 4rem; border-bottom:0.5px solid rgba(143,176,138,0.08); display:flex; gap:0.2rem; flex-wrap:wrap; max-width:1300px; margin:0 auto; width:100%; }
+  .alpha-btn { background:transparent; border:none; font-family:'Cormorant Garamond',serif; font-size:0.95rem; color:rgba(240,236,224,0.2); padding:0.15rem 0.4rem; cursor:pointer; transition:all 0.2s; line-height:1; }
+  .alpha-btn:disabled { cursor:default; }
+  .alpha-btn.has-entries { color:rgba(240,236,224,0.5); }
+  .alpha-btn.has-entries:hover { color:var(--cream); }
+  .alpha-btn.active { color:var(--leaf); border-bottom:1px solid var(--leaf); }
+
+  .guide-main { flex:1; display:grid; grid-template-columns:1fr 480px; max-width:1300px; margin:0 auto; width:100%; }
+
+  .plant-index { border-right:0.5px solid rgba(143,176,138,0.1); overflow-y:auto; max-height:calc(100vh - 72px); position:sticky; top:0; }
+
+  .letter-heading { font-family:'Cormorant Garamond',serif; font-size:1.8rem; font-weight:300; color:rgba(143,176,138,0.2); padding:1rem 1.5rem 0.4rem; position:sticky; top:0; background:#0d1a0e; z-index:2; border-bottom:0.5px solid rgba(143,176,138,0.06); }
+
+  .plant-row { display:grid; grid-template-columns:1fr auto; gap:1rem; padding:0.9rem 1.5rem; border-bottom:0.5px solid rgba(143,176,138,0.06); cursor:pointer; transition:background 0.18s; align-items:center; }
+  .plant-row:hover { background:rgba(74,124,78,0.07); }
+  .plant-row.active { background:rgba(74,124,78,0.13); border-left:2px solid var(--leaf); padding-left:calc(1.5rem - 2px); }
+
+  .row-name { font-size:0.88rem; font-weight:500; margin-bottom:0.15rem; }
+  .row-latin { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:0.78rem; color:rgba(240,236,224,0.38); }
+  .row-badges { display:flex; gap:0.35rem; flex-wrap:wrap; margin-top:0.3rem; }
+  .row-badge { font-size:0.58rem; letter-spacing:0.08em; text-transform:uppercase; padding:0.15rem 0.5rem; border:0.5px solid; }
+  .row-badge.medicinal { color:var(--leaf); border-color:rgba(107,163,104,0.35); }
+  .row-badge.toxic { color:#d48a7a; border-color:rgba(212,138,122,0.35); }
+  .row-badge.edible { color:#7ac0d4; border-color:rgba(122,192,212,0.35); }
+  .row-badge.endangered { color:#c85050; border-color:rgba(200,80,80,0.35); }
+  .row-season { font-size:0.65rem; color:rgba(240,236,224,0.3); letter-spacing:0.06em; text-align:right; white-space:nowrap; }
+
+  .no-results { padding:3rem 2rem; text-align:center; color:rgba(240,236,224,0.25); font-size:0.82rem; display:none; }
+
+  .detail-panel { overflow-y:auto; position:sticky; top:0; height:calc(100vh - 72px); }
+
+  .detail-empty { display:flex; flex-direction:column; align-items:center; justify-content:center; height:100%; text-align:center; opacity:0.28; padding:2rem; }
+  .detail-empty svg { width:52px; height:52px; margin-bottom:1.2rem; }
+  .detail-empty p { font-size:0.82rem; color:rgba(240,236,224,0.6); max-width:200px; line-height:1.6; }
+
+  .detail-content { display:none; animation:fadeUp 0.3s ease forwards; }
+  @keyframes fadeUp { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:translateY(0); } }
+
+  .detail-img-header { width:100%; aspect-ratio:16/9; background:rgba(20,36,21,0.8); position:relative; overflow:hidden; }
+  .detail-img-header img { width:100%; height:100%; object-fit:cover; filter:saturate(0.6) brightness(0.55); }
+  .detail-img-overlay { position:absolute; inset:0; background:linear-gradient(to bottom,transparent 40%,rgba(13,26,14,0.9) 100%); display:flex; flex-direction:column; justify-content:flex-end; padding:1.5rem; }
+  .detail-status-pill { display:inline-block; margin-bottom:0.5rem; font-size:0.6rem; letter-spacing:0.12em; text-transform:uppercase; padding:0.22rem 0.7rem; }
+  .detail-img-name { font-family:'Cormorant Garamond',serif; font-size:1.9rem; font-weight:300; line-height:1.05; margin-bottom:0.2rem; }
+  .detail-img-latin { font-family:'Cormorant Garamond',serif; font-style:italic; font-size:0.9rem; color:rgba(240,236,224,0.5); }
+
+  .detail-body { padding:1.5rem; }
+
+  .taxonomy-row { display:flex; gap:1.5rem; flex-wrap:wrap; padding:1rem 0; border-bottom:0.5px solid rgba(143,176,138,0.1); margin-bottom:1.5rem; }
+  .tax-key { font-size:0.6rem; letter-spacing:0.15em; text-transform:uppercase; color:rgba(240,236,224,0.3); margin-bottom:0.2rem; }
+  .tax-val { font-size:0.82rem; color:rgba(240,236,224,0.75); }
+
+  .dsection { margin-bottom:1.5rem; padding-bottom:1.5rem; border-bottom:0.5px solid rgba(143,176,138,0.08); }
+  .dsection:last-child { border-bottom:none; margin-bottom:0; }
+  .dsection-title { font-size:0.62rem; letter-spacing:0.18em; text-transform:uppercase; color:var(--leaf); margin-bottom:0.8rem; }
+  .dsection p { font-size:0.83rem; color:rgba(240,236,224,0.65); line-height:1.8; }
+
+  .features-grid { display:grid; grid-template-columns:1fr 1fr; gap:0.7rem; margin-top:0.4rem; }
+  .feature-item { background:rgba(20,36,21,0.5); border:0.5px solid rgba(143,176,138,0.12); padding:0.75rem 0.9rem; }
+  .feature-key { font-size:0.62rem; letter-spacing:0.1em; text-transform:uppercase; color:rgba(240,236,224,0.3); margin-bottom:0.25rem; }
+  .feature-val { font-size:0.8rem; color:rgba(240,236,224,0.7); line-height:1.5; }
+
+  .habitat-tags { display:flex; flex-wrap:wrap; gap:0.4rem; margin-top:0.4rem; }
+  .habitat-tag { font-size:0.65rem; letter-spacing:0.05em; padding:0.25rem 0.65rem; border:0.5px solid rgba(143,176,138,0.18); color:rgba(240,236,224,0.5); }
+
+  .season-bar { display:grid; grid-template-columns:repeat(12,1fr); gap:3px; margin-top:0.5rem; }
+  .season-month-label { font-size:0.55rem; color:rgba(240,236,224,0.25); margin-bottom:3px; letter-spacing:0.03em; text-align:center; }
+  .season-month-block { height:8px; border-radius:1px; background:rgba(143,176,138,0.1); }
+  .season-month-block.flower { background:#6ba368; }
+  .season-month-block.fruit  { background:#c9a84c; }
+  .season-month-block.leaf   { background:rgba(107,163,104,0.4); }
+
+  .season-legend { display:flex; gap:1rem; margin-top:0.6rem; flex-wrap:wrap; }
+  .season-legend-item { display:flex; align-items:center; gap:6px; font-size:0.65rem; color:rgba(240,236,224,0.4); }
+  .season-legend-dot { width:8px; height:8px; border-radius:1px; }
+
+  .warning-box { background:rgba(180,80,60,0.08); border:0.5px solid rgba(180,80,60,0.3); padding:0.9rem 1rem; margin-top:0.5rem; }
+  .warning-box strong { display:block; font-size:0.62rem; letter-spacing:0.15em; text-transform:uppercase; color:#d48a7a; margin-bottom:0.3rem; }
+  .warning-box p { font-size:0.78rem; color:rgba(212,138,122,0.8); line-height:1.65; }
+
+  .cross-links { display:flex; gap:0.7rem; flex-wrap:wrap; padding:1.2rem 1.5rem; border-top:0.5px solid rgba(143,176,138,0.1); position:sticky; bottom:0; background:#0d1a0e; }
+  .cross-link { font-family:'Syne',sans-serif; font-size:0.7rem; letter-spacing:0.1em; text-transform:uppercase; padding:0.6rem 1rem; border:0.5px solid rgba(143,176,138,0.22); color:rgba(240,236,224,0.6); background:transparent; cursor:pointer; transition:all 0.2s; text-decoration:none; display:inline-block; }
+  .cross-link:hover { border-color:var(--leaf); color:var(--cream); }
+  .cross-link.primary { background:var(--cream); color:#0d1a0e; border-color:var(--cream); }
+  .cross-link.primary:hover { background:var(--gold); border-color:var(--gold); }
+
+  @media(max-width:1000px) {
+    .guide-main { grid-template-columns:1fr; }
+    .detail-panel { position:static; height:auto; border-top:0.5px solid rgba(143,176,138,0.1); }
+    .plant-index { max-height:340px; position:static; }
+  }
+  @media(max-width:700px) {
+    .page-hero { padding:2rem 1.5rem; }
+    .controls { padding:1rem 1.5rem; }
+    .alpha-bar { padding:0.6rem 1.5rem; }
+    .hero-stats { display:none; }
+    .features-grid { grid-template-columns:1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+<nav>
+  <a href="../index.html" class="logo">
+    <svg class="logo-icon" viewBox="0 0 32 32" fill="none">
+      <path d="M16 2C16 2 8 10 8 18C8 22.4 11.6 26 16 26C20.4 26 24 22.4 24 18C24 10 16 2 16 2Z" fill="#6ba368" opacity="0.7"/>
+      <path d="M16 8C16 8 10 14 10 20C10 23.3 12.7 26 16 26" stroke="#8fb08a" stroke-width="1" fill="none"/>
+      <line x1="16" y1="26" x2="16" y2="30" stroke="#6ba368" stroke-width="1.5"/>
+    </svg>
+    <span class="logo-text">FloraSense</span>
+  </a>
+  <ul class="nav-links">
+   <!-- <li><a href="scan.html">Identify</a></li>
+    <li><a href="remedies.html">Remedies</a></li>
+    <li><a href="rarity.html">Rarity Index</a></li>-->
+    <li><a href="field-guide.html" style="color:var(--cream)">Field Guide</a></li>
+  </ul>
+</nav>
+
+<div class="page-hero">
+  <div class="page-hero-content">
+    <div>
+      <div class="panel-label">Encyclopedia</div>
+      <h1>The complete <em>field guide.</em></h1>
+      <p>Every plant. Full taxonomy, habitat, identification features, seasonal calendar, and cross-references to medicinal uses and conservation status.</p>
+    </div>
+    <div class="hero-stats">
+      <div><div class="hero-stat-num">20</div><div class="hero-stat-label">Plants indexed</div></div>
+      <div><div class="hero-stat-num">12</div><div class="hero-stat-label">Plant families</div></div>
+      <div><div class="hero-stat-num">6</div><div class="hero-stat-label">Regions covered</div></div>
+    </div>
+  </div>
+</div>
+
+<div class="controls">
+  <div class="search-wrap">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+    <input type="text" id="search-input" placeholder="Search by name, family, habitat, or feature...">
+  </div>
+  <div class="filter-pills">
+    <button class="filter-pill active" data-filter="all">All</button>
+    <button class="filter-pill" data-filter="medicinal">Medicinal</button>
+    <button class="filter-pill" data-filter="edible">Edible</button>
+    <button class="filter-pill" data-filter="toxic">Toxic</button>
+    <button class="filter-pill" data-filter="endangered">Threatened</button>
+    <button class="filter-pill" data-filter="woodland">Woodland</button>
+    <button class="filter-pill" data-filter="aquatic">Aquatic</button>
+  </div>
+  <select class="sort-select" id="sort-select">
+    <option value="alpha">A to Z</option>
+    <option value="alpha-desc">Z to A</option>
+    <option value="family">By Family</option>
+    <option value="rarity">By Rarity</option>
+  </select>
+</div>
+
+<div class="alpha-bar" id="alpha-bar"></div>
+
+<div class="guide-main">
+  <div class="plant-index" id="plant-index">
+    <div class="no-results" id="no-results">No plants match your search.</div>
+  </div>
+  <div class="detail-panel" id="detail-panel">
+    <div class="detail-empty" id="detail-empty">
+      <svg viewBox="0 0 52 52" fill="none">
+        <rect x="10" y="6" width="32" height="40" rx="2" stroke="#6ba368" stroke-width="1.2"/>
+        <line x1="18" y1="16" x2="34" y2="16" stroke="#6ba368" stroke-width="1"/>
+        <line x1="18" y1="22" x2="34" y2="22" stroke="#6ba368" stroke-width="1"/>
+        <line x1="18" y1="28" x2="28" y2="28" stroke="#6ba368" stroke-width="1"/>
+        <path d="M24 34C24 34 20 38 24 42C28 38 24 34 24 34Z" stroke="#8fb08a" stroke-width="1" fill="none"/>
+      </svg>
+      <p>Select a plant to open its full field guide entry</p>
+    </div>
+    <div class="detail-content" id="detail-content">
+      <div class="detail-img-header">
+        <img id="d-img" src="" alt="">
+        <div class="detail-img-overlay">
+          <span class="detail-status-pill" id="d-status-pill"></span>
+          <div class="detail-img-name" id="d-name"></div>
+          <div class="detail-img-latin" id="d-latin"></div>
+        </div>
+      </div>
+      <div class="detail-body">
+        <div class="taxonomy-row" id="d-taxonomy"></div>
+        <div class="dsection"><div class="dsection-title">Description</div><p id="d-description"></p></div>
+        <div class="dsection"><div class="dsection-title">Identification Features</div><div class="features-grid" id="d-features"></div></div>
+        <div class="dsection"><div class="dsection-title">Habitat and Distribution</div><p id="d-habitat"></p><div class="habitat-tags" id="d-habitat-tags"></div></div>
+        <div class="dsection">
+          <div class="dsection-title">Seasonal Calendar</div>
+          <div class="season-bar" id="d-season"></div>
+          <div class="season-legend">
+            <div class="season-legend-item"><div class="season-legend-dot" style="background:#6ba368"></div>Flowering</div>
+            <div class="season-legend-item"><div class="season-legend-dot" style="background:#c9a84c"></div>Fruiting</div>
+            <div class="season-legend-item"><div class="season-legend-dot" style="background:rgba(107,163,104,0.4)"></div>Leaf present</div>
+          </div>
+        </div>
+        <div class="dsection"><div class="dsection-title">Ecology and Wildlife</div><p id="d-ecology"></p></div>
+        <div class="dsection" id="d-warning-section" style="display:none">
+          <div class="dsection-title">Toxicity Warning</div>
+          <div class="warning-box" id="d-warning"></div>
+        </div>
+        <div class="dsection"><div class="dsection-title">Lookalikes and Confusion Species</div><p id="d-lookalikes"></p></div>
+      </div>
+      <div class="cross-links" id="d-cross-links"></div>
+    </div>
+  </div>
+</div>
+
+<footer>
+  <span>&copy; 2026 FloraSense &mdash; Field Intelligence for the Natural World</span>
+  <span>Privacy &nbsp;&middot;&nbsp; Terms &nbsp;&middot;&nbsp; API</span>
+</footer>
+</div>
+
+<script>
+const MONTHS = ["J","F","M","A","M","J","J","A","S","O","N","D"];
+const statusColors = {"least-concern":"#6ba368","near-threatened":"#a8c45a","vulnerable":"#c9a84c","endangered":"#d4854a","critically":"#c85050","extinct-wild":"#b07ab0","extinct":"#7a7a8a"};
+const rarityOrder = ["extinct","extinct-wild","critically","endangered","vulnerable","near-threatened","least-concern"];
+
+const plants = [
+  {id:1,name:"Alexanders",latin:"Smyrnium olusatrum",family:"Apiaceae",genus:"Smyrnium",order:"Apiales",filters:["edible","medicinal"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A robust, glossy biennial that was the primary cultivated vegetable of medieval Europe before celery replaced it. Often the first umbelliferous plant of the year, its yellow-green flowers appearing as early as February in sheltered coastal sites.",features:[{key:"Height",val:"50-150 cm"},{key:"Leaves",val:"Glossy, trefoil, dark green"},{key:"Flowers",val:"Yellow-green umbels, Feb-Jun"},{key:"Stem",val:"Solid, ridged, hollow when old"},{key:"Smell",val:"Celery-like when crushed"},{key:"Fruit",val:"Black oval seeds"}],habitat:"Hedgebanks, roadsides, coastal cliffs and waste ground near the sea.",habitatTags:["Coastal","Hedgebank","Waste ground","Biennial"],ecology:"Important early-season nectar source for hoverflies and early bumblebees. Seeds eaten by finches.",toxic:false,lookalikes:"Can be confused with Hemlock (purple-blotched stems) and other Apiaceae. Check glossy trefoil leaves and celery scent.",links:["medicinal","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[1,2,3,4,5],fruit:[5,6,7]}},
+  {id:2,name:"Bogbean",latin:"Menyanthes trifoliata",family:"Menyanthaceae",genus:"Menyanthes",order:"Asterales",filters:["medicinal","aquatic"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A remarkably beautiful aquatic plant whose fringe-petalled white flowers are among the most intricate of any British species. Grows in shallow water and wet bog margins.",features:[{key:"Height",val:"Emergent 10-30 cm"},{key:"Leaves",val:"Trifoliate, thick, glossy"},{key:"Flowers",val:"White, fringed petals, May-Jul"},{key:"Stem",val:"Floating/creeping rhizome"},{key:"Habitat",val:"Shallow acid water"},{key:"Fruit",val:"Oval capsule"}],habitat:"Bogs, fens, lake margins and slow-moving streams. Characteristic of acid, nutrient-poor waters.",habitatTags:["Bog","Fen","Lake margin","Acid water","Aquatic"],ecology:"Important bog habitat plant providing shelter for invertebrates and amphibians. Pollinated by long-tongued bumblebees.",toxic:false,lookalikes:"Unmistakable when in flower. Trifoliate leaves could be confused with Lesser Trefoil on drained sites.",links:["medicinal","rarity","scan"],season_raw:{leaf:[2,3,4,5,6,7,8,9],flower:[3,4,5],fruit:[5,6,7]}},
+  {id:3,name:"Common Toadflax",latin:"Linaria vulgaris",family:"Plantaginaceae",genus:"Linaria",order:"Lamiales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A graceful pale-leaved perennial with snapdragon-like flowers of butter yellow and orange. Spreads freely on disturbed ground.",features:[{key:"Height",val:"30-90 cm"},{key:"Leaves",val:"Linear, grey-green, alternate"},{key:"Flowers",val:"Yellow/orange, Jun-Oct"},{key:"Spur",val:"Long, curved nectar spur"},{key:"Stem",val:"Erect, wiry, branched"},{key:"Spreads",val:"Rhizomes and seed"}],habitat:"Roadsides, railway banks, waste ground, arable field margins on well-drained soils.",habitatTags:["Roadside","Railway bank","Disturbed ground","Arable margin"],ecology:"Nectar spur accessed only by long-tongued bumblebees. Late-season nectar source.",toxic:false,lookalikes:"Pale Toadflax (Linaria repens) has smaller lilac-veined flowers.",links:["medicinal","scan"],season_raw:{leaf:[3,4,5,6,7,8,9],flower:[4,5,6,7,8],fruit:[6,7,8,9]}},
+  {id:4,name:"Devil's-bit Scabious",latin:"Succisa pratensis",family:"Caprifoliaceae",genus:"Succisa",order:"Dipsacales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A beautiful deep-blue pincushion-flowered perennial of damp grassland. The sole larval foodplant of the marsh fritillary butterfly - one of Britain's most threatened insects.",features:[{key:"Height",val:"15-100 cm"},{key:"Leaves",val:"Basal rosette, oblong, unlobed"},{key:"Flowers",val:"Blue-purple pincushion, Jul-Oct"},{key:"Root",val:"Abruptly truncated"},{key:"Stem",val:"Branched, hairy"},{key:"Habitat",val:"Damp acid grassland"}],habitat:"Damp meadows, heathland, woodland rides, fens and upland grassland. Indicator of high-quality unimproved habitat.",habitatTags:["Damp meadow","Heathland","Woodland ride","Ancient grassland"],ecology:"Critical exclusive larval foodplant of the marsh fritillary butterfly (Euphydryas aurinia). Also important for bumblebees.",toxic:false,lookalikes:"Field Scabious has slightly lobed upper leaves. Small Scabious has deeply pinnate leaves.",links:["medicinal","rarity","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[5,6,7,8],fruit:[7,8,9]}},
+  {id:5,name:"Enchanter's Nightshade",latin:"Circaea lutetiana",family:"Onagraceae",genus:"Circaea",order:"Myrtales",filters:["woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A delicate shade-loving perennial of damp woodland, once believed to be the plant used by the sorceress Circe. Its sticky fruits cling tenaciously to fur and clothing.",features:[{key:"Height",val:"20-70 cm"},{key:"Leaves",val:"Opposite, oval, finely toothed"},{key:"Flowers",val:"Tiny white 2-petalled, Jun-Aug"},{key:"Fruit",val:"Hooked bristly capsule"},{key:"Stem",val:"Slightly hairy, reddish nodes"},{key:"Root",val:"Creeping rhizome"}],habitat:"Deep shade of deciduous woodland, especially ancient woods on moist base-rich soils.",habitatTags:["Ancient woodland","Deep shade","Moist soil","Hedgerow"],ecology:"Ancient woodland indicator. Hooked fruits dispersed by mammals and birds. Forms extensive ground-cover carpets.",toxic:false,lookalikes:"The tiny two-petalled flowers are distinctive. Opposite-leaved Golden-saxifrage has yellow flowers in very damp woodland.",links:["scan"],season_raw:{leaf:[3,4,5,6,7,8,9],flower:[4,5,6],fruit:[6,7,8,9]}},
+  {id:6,name:"Foxglove",latin:"Digitalis purpurea",family:"Plantaginaceae",genus:"Digitalis",order:"Lamiales",filters:["toxic","medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"One of Britain's most spectacular wildflowers. A tall biennial whose towering purple flower spikes line woodland rides. Source of digoxin, a life-saving heart medicine.",features:[{key:"Height",val:"50-180 cm"},{key:"Leaves",val:"Large, woolly, grey-green"},{key:"Flowers",val:"Purple-pink tubes, Jun-Sep"},{key:"Inside",val:"Dark spots with white halos"},{key:"Stem",val:"Tall, unbranched spike"},{key:"Lifecycle",val:"Biennial"}],habitat:"Woodland clearings, forest rides, heathland. Acid, well-drained soils. Pioneer of disturbed woodland.",habitatTags:["Woodland clearing","Heathland","Acid soil","Biennial","Pioneer"],ecology:"Flowers shaped for bumblebees, especially garden bumblebee (Bombus hortorum). Important nectar source.",toxic:true,toxicNote:"Extremely toxic - all parts, especially leaves and seeds. Contains cardiac glycosides causing fatal cardiac arrhythmia. Do not eat any part. Wash hands after handling.",lookalikes:"Unmistakable when in flower. First-year rosette could be confused with Mullein (yellow flowers, woollier leaves).",links:["medicinal","rarity","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[4,5,6,7],fruit:[6,7,8,9]}},
+  {id:7,name:"Ghost Orchid",latin:"Epipogium aphyllum",family:"Orchidaceae",genus:"Epipogium",order:"Asparagales",filters:["endangered","woodland"],statusLabel:"Critically Endangered",statusClass:"critically",description:"Europe's most mysterious plant - a leafless chlorophyll-free orchid that derives all nutrition from underground fungi. Can remain dormant for decades before flowering.",features:[{key:"Height",val:"5-20 cm when flowering"},{key:"Leaves",val:"None - scale-like bracts only"},{key:"Flowers",val:"Pale cream-pink, Jul-Aug"},{key:"Roots",val:"Coral-like, no root hairs"},{key:"Colour",val:"Translucent pale cream"},{key:"Scent",val:"Faint vanilla fragrance"}],habitat:"Deep undisturbed shade of ancient beech and oak woodland on calcareous, moist, humus-rich soil.",habitatTags:["Ancient beech wood","Calcareous","Deep shade","Undisturbed","Protected"],ecology:"Entirely dependent on mycorrhizal fungi and mature beech and oak. A perfect symbol of ecological interdependency.",toxic:false,lookalikes:"The pale leafless ghostly appearance is unique among European plants.",links:["rarity","scan"],season_raw:{leaf:[],flower:[5,6],fruit:[6,7]}},
+  {id:8,name:"Hemlock Water-dropwort",latin:"Oenanthe crocata",family:"Apiaceae",genus:"Oenanthe",order:"Apiales",filters:["toxic","aquatic"],statusLabel:"Least Concern",statusClass:"least-concern",description:"The most poisonous plant in Britain. Despite this it is common and beautiful, with large flat white flower heads rising from ditches and riverbanks.",features:[{key:"Height",val:"50-150 cm"},{key:"Leaves",val:"Bright green, deeply divided"},{key:"Flowers",val:"White umbels, Jun-Jul"},{key:"Root",val:"Clustered tubers, parsnip-scented"},{key:"Stem",val:"Hollow, ribbed, purple-tinged"},{key:"Sap",val:"Yellow when cut"}],habitat:"Wet ditches, riverbanks, marshes, wet woodland and tidal creeks. Most common in SW England and Ireland.",habitatTags:["Wet ditch","Riverbank","Marsh","Brackish","Aquatic"],ecology:"Despite toxicity to mammals, an important nectar source for hoverflies and beetles.",toxic:true,toxicNote:"The most acutely toxic plant in Britain. Contains oenanthotoxin causing convulsions and death within hours. Roots especially dangerous - have been mistaken for parsnips with fatal results. Do not touch. All parts dangerous.",lookalikes:"Could be confused with edible Alexanders or Wild Angelica. Key features: hollow ribbed purple-tinged stem, parsnip-scented clustered roots, yellow sap. Never touch white Apiaceae near water if unsure.",links:["scan"],season_raw:{leaf:[1,2,3,4,5,6,7,8,9],flower:[4,5,6],fruit:[6,7,8]}},
+  {id:9,name:"Ivy-leaved Toadflax",latin:"Cymbalaria muralis",family:"Plantaginaceae",genus:"Cymbalaria",order:"Lamiales",filters:["medicinal"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A delicate trailing plant that colonises old stone walls. Native to Mediterranean rocks, introduced to Britain in the 17th century. After flowering it turns its stalks away from light to push seeds into crevices.",features:[{key:"Height",val:"Trailing to 60 cm"},{key:"Leaves",val:"Ivy-shaped, 5-lobed, glossy"},{key:"Flowers",val:"Tiny lilac with yellow patch, Apr-Nov"},{key:"Stem",val:"Wiry, purplish, trailing"},{key:"Fruit",val:"Seed stalk bends toward wall"},{key:"Behaviour",val:"Negative phototropism post-flower"}],habitat:"Old stone walls, rock faces, pavement cracks. Naturalised throughout Britain. Prefers lime-mortared walls.",habitatTags:["Stone wall","Rock face","Urban","Naturalised","Shade-tolerant"],ecology:"Long season nectar for small bees and hoverflies. Post-flowering behaviour - inserting seeds into crevices - is elegant adaptive behaviour.",toxic:false,lookalikes:"The tiny ivy-shaped leaves and miniature lilac snapdragon flowers on stone walls are unmistakable.",links:["scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[2,3,4,5,6,7,8,9],fruit:[4,5,6,7,8,9,10]}},
+  {id:10,name:"Juniper",latin:"Juniperus communis",family:"Cupressaceae",genus:"Juniperus",order:"Pinales",filters:["medicinal","edible","endangered"],statusLabel:"Near Threatened",statusClass:"near-threatened",description:"Britain's only native cypress family member - a spiny aromatic shrub or small tree. The berries, taking 2-3 years to ripen, are the principal flavouring in gin.",features:[{key:"Height",val:"30 cm to 6 m"},{key:"Leaves",val:"Needle-like, sharp, single white stripe"},{key:"Berries",val:"Green yr 1, blue-black yr 2-3"},{key:"Bark",val:"Reddish-brown, peeling"},{key:"Smell",val:"Strong gin-like aroma"},{key:"Sex",val:"Dioecious - separate male/female"}],habitat:"Chalk downland, limestone pavement, upland moor. Declining rapidly due to overgrazing and lack of regeneration.",habitatTags:["Chalk downland","Limestone","Upland moor","Calcicole","Near-threatened"],ecology:"Berries eaten by thrushes, waxwings and starlings. Over 40 invertebrate species depend on juniper. Declining alarmingly.",toxic:false,lookalikes:"Single white stripe along each needle is diagnostic. Yew has flat dark green needles without the stripe.",links:["medicinal","rarity","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[2,3,4],fruit:[6,7,8,9,10,11]}},
+  {id:11,name:"Kidney Vetch",latin:"Anthyllis vulneraria",family:"Fabaceae",genus:"Anthyllis",order:"Fabales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A silky-leaved perennial of chalk grassland with woolly-headed flower clusters. The sole larval foodplant of the small blue butterfly - Britain's smallest butterfly.",features:[{key:"Height",val:"10-40 cm"},{key:"Leaves",val:"Pinnate, silky-hairy"},{key:"Flowers",val:"Woolly clusters yellow-red, May-Sep"},{key:"Calyx",val:"Inflated woolly calyx - distinctive"},{key:"Stems",val:"Sprawling to erect, silky"},{key:"Habitat",val:"Short calcareous grassland"}],habitat:"Short chalk and limestone grassland, coastal cliffs, sand dunes. Strictly base-rich well-drained soils.",habitatTags:["Chalk grassland","Coastal cliff","Sand dune","Limestone","Calcareous"],ecology:"Exclusive larval foodplant of the small blue butterfly (Cupido minimus). Indicator of ancient unimproved calcareous grassland.",toxic:false,lookalikes:"The inflated woolly calyx is diagnostic. Bird's-foot Trefoil has similar yellow pea flowers but lacks the woolly calyx.",links:["medicinal","scan"],season_raw:{leaf:[2,3,4,5,6,7,8,9],flower:[3,4,5,6,7],fruit:[6,7,8]}},
+  {id:12,name:"Lady's Bedstraw",latin:"Galium verum",family:"Rubiaceae",genus:"Galium",order:"Gentianales",filters:["medicinal","edible"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A scrambling sweet-smelling perennial with dense clusters of golden-yellow flowers. Historically used to stuff mattresses, curdle milk for cheese-making, and as a yellow dye.",features:[{key:"Height",val:"20-80 cm scrambling"},{key:"Leaves",val:"Narrow, in whorls of 8-12"},{key:"Flowers",val:"Tiny golden-yellow, Jun-Sep"},{key:"Smell",val:"Honey-scented fresh, hay when dry"},{key:"Stems",val:"Square, scrambling"},{key:"Habitat",val:"Dry grassland, dunes"}],habitat:"Dry grassland, chalk downland, sand dunes, heathland edges. Well-drained neutral to basic soils.",habitatTags:["Chalk downland","Sand dune","Dry grassland","Hedgebank"],ecology:"Nectar source for small insects. Scrambling stems provide invertebrate structure. Seeds eaten by granivorous birds.",toxic:false,lookalikes:"Hedge Bedstraw has white flowers. Cleavers has sticky stems. Golden-yellow flowers of Lady's Bedstraw are distinctive.",links:["medicinal","scan"],season_raw:{leaf:[2,3,4,5,6,7,8,9],flower:[4,5,6,7],fruit:[7,8,9]}},
+  {id:13,name:"Meadow Cranesbill",latin:"Geranium pratense",family:"Geraniaceae",genus:"Geranium",order:"Geraniales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"One of the most beautiful wild geraniums - large vivid blue-violet flowers on a bushy deeply-cut-leaved perennial. Characteristic of traditional hay meadows.",features:[{key:"Height",val:"30-80 cm"},{key:"Leaves",val:"Deeply palmately lobed, 7 lobes"},{key:"Flowers",val:"Blue-violet, Jun-Sep"},{key:"Fruit",val:"Long-beaked seed pod (cranesbill)"},{key:"Stem",val:"Hairy, branched"},{key:"Habitat",val:"Hay meadow, roadside"}],habitat:"Old hay meadows, road verges, riverbanks and woodland edges on calcareous or neutral soils.",habitatTags:["Hay meadow","Road verge","Riverbank","Calcareous","Traditional management"],ecology:"Visited by wide variety of bees and hoverflies. Seeds dispersed by explosive release mechanism. Indicator of botanically-rich grassland.",toxic:false,lookalikes:"Wood Cranesbill is woodland-associated with more reddish-purple flowers. Bloody Cranesbill has vivid magenta flowers.",links:["medicinal","scan"],season_raw:{leaf:[2,3,4,5,6,7,8,9],flower:[4,5,6,7],fruit:[6,7,8,9]}},
+  {id:14,name:"Navelwort",latin:"Umbilicus rupestris",family:"Crassulaceae",genus:"Umbilicus",order:"Saxifragales",filters:["edible","medicinal"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A succulent-leaved plant of old stone walls, named for the navel-like dimple in its round fleshy leaves. One of the few truly succulent wild plants native to northern Europe.",features:[{key:"Height",val:"10-40 cm when flowering"},{key:"Leaves",val:"Round, fleshy, central dimple"},{key:"Flowers",val:"Tubular cream-green, May-Jul"},{key:"Stem",val:"Single flower spike"},{key:"Texture",val:"Thick, succulent, waxy"},{key:"Habit",val:"Grows in rock crevices"}],habitat:"Old stone walls, rock crevices, shaded cliff faces. Most abundant in Atlantic regions - SW England, Wales, Ireland.",habitatTags:["Stone wall","Rock crevice","Atlantic","Shade-tolerant","Succulent"],ecology:"Provides nectar for early bees and hoverflies. Fleshy leaves store water as adaptation to rapid drying of wall habitats.",toxic:false,lookalikes:"The round dimpled fleshy leaves are unique and unmistakable.",links:["medicinal","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[3,4,5],fruit:[5,6,7]}},
+  {id:15,name:"Ox-eye Daisy",latin:"Leucanthemum vulgare",family:"Asteraceae",genus:"Leucanthemum",order:"Asterales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"The classic white daisy of unimproved meadows. One of the most important pollinator plants in the British flora - a single flower head can attract dozens of insect species.",features:[{key:"Height",val:"20-70 cm"},{key:"Leaves",val:"Dark green; basal spoon-shaped"},{key:"Flowers",val:"White ray, yellow disc, May-Sep"},{key:"Diameter",val:"Up to 6 cm"},{key:"Smell",val:"Faint aromatic when crushed"},{key:"Stem",val:"Slightly hairy, unbranched"}],habitat:"Unimproved neutral and calcareous grassland, road verges, old meadows. Absent from acid or waterlogged soils.",habitatTags:["Meadow","Road verge","Chalk grassland","Unimproved grassland"],ecology:"One of the most valuable pollinator plants in Britain. Open flower accessible to beetles, bees, hoverflies, butterflies and moths.",toxic:false,lookalikes:"Scentless Mayweed has finely divided feathery leaves. Feverfew has strongly scented deeply lobed leaves.",links:["medicinal","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[3,4,5,6,7],fruit:[6,7,8]}},
+  {id:16,name:"Primrose",latin:"Primula vulgaris",family:"Primulaceae",genus:"Primula",order:"Ericales",filters:["medicinal","edible","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"The classic herald of spring. Pale yellow sweetly scented flowers are one of the most beloved sights in the British countryside. Declining due to habitat loss.",features:[{key:"Height",val:"5-20 cm"},{key:"Leaves",val:"Wrinkled, oblong, toothed, in rosette"},{key:"Flowers",val:"Pale yellow, notched petals, Feb-May"},{key:"Scent",val:"Delicate sweet fragrance"},{key:"Dimorphic",val:"Pin and thrum flowers"},{key:"Habitat",val:"Woodland, hedgebank"}],habitat:"Ancient woodland, hedgebanks, shaded road verges, sea cliffs. Moist but well-drained moderately base-rich soils.",habitatTags:["Ancient woodland","Hedgebank","Sea cliff","Spring ephemeral"],ecology:"Important early-season nectar for queen bumblebees and orange-tip butterflies. Seeds dispersed by ants (myrmecochory).",toxic:false,lookalikes:"Cowslip has multiple flowers on erect stem. Oxlip is larger with one-sided flower head.",links:["medicinal","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[0,1,2,3],fruit:[3,4,5]}},
+  {id:17,name:"Ragged Robin",latin:"Lychnis flos-cuculi",family:"Caryophyllaceae",genus:"Lychnis",order:"Caryophyllales",filters:["medicinal","aquatic"],statusLabel:"Near Threatened",statusClass:"near-threatened",description:"A distinctive pink wildflower of wet meadows with deeply dissected petals giving a ragged appearance. Rapidly declining as wetland habitats are drained.",features:[{key:"Height",val:"30-70 cm"},{key:"Leaves",val:"Narrow, in opposite pairs"},{key:"Flowers",val:"Vivid pink, 5 deeply cut petals"},{key:"Stem",val:"Sticky below upper nodes"},{key:"Petal shape",val:"Each petal cut into 4 narrow strips"},{key:"Habitat",val:"Wet meadow, marsh"}],habitat:"Wet meadows, marshes, fens, pond margins. Characteristic of traditionally managed wet grassland. Declining rapidly.",habitatTags:["Wet meadow","Marsh","Fen","Near-threatened","Wetland"],ecology:"Pollinated by long-tongued bumblebees, butterflies and moths. Sticky stems may deter nectar thieves.",toxic:false,lookalikes:"Red Campion has uncut petals and is more widespread. The deeply dissected pink petals of Ragged Robin are unique.",links:["medicinal","rarity","scan"],season_raw:{leaf:[2,3,4,5,6,7,8,9],flower:[3,4,5,6],fruit:[6,7,8]}},
+  {id:18,name:"Stinging Nettle",latin:"Urtica dioica",family:"Urticaceae",genus:"Urtica",order:"Rosales",filters:["medicinal","edible"],statusLabel:"Least Concern",statusClass:"least-concern",description:"Universally known, deeply misunderstood. One of the most ecologically important and nutritionally rich plants in northern Europe. Over 40 invertebrate species depend on it exclusively.",features:[{key:"Height",val:"60-150 cm"},{key:"Leaves",val:"Ovate, toothed, stinging hairs"},{key:"Flowers",val:"Tiny green catkins, Jun-Sep"},{key:"Sting",val:"Silica-tipped hypodermic hairs"},{key:"Stem",val:"Square, fibrous, stinging"},{key:"Roots",val:"Yellow, spreading rhizome"}],habitat:"Nutrient-rich disturbed ground, riverbanks, old farmyards, woodland edges. Nitrogen indicator.",habitatTags:["Disturbed ground","Riverbank","Nitrogen indicator","Farmyard","Widespread"],ecology:"Larval foodplant of red admiral, painted lady, small tortoiseshell, peacock and comma butterflies. The most important plant for British butterfly larvae.",toxic:false,lookalikes:"Stinging hairs are unmistakable. Dead-nettles have similar leaf shape but no sting and showy tubular flowers.",links:["medicinal","rarity","scan"],season_raw:{leaf:[1,2,3,4,5,6,7,8,9,10],flower:[4,5,6,7],fruit:[6,7,8,9]}},
+  {id:19,name:"Teasel",latin:"Dipsacus fullonum",family:"Caprifoliaceae",genus:"Dipsacus",order:"Dipsacales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A tall architectural biennial with spiny stems. The seed heads persist through winter and are a vital food source for goldfinches which cling acrobatically to them.",features:[{key:"Height",val:"70-200 cm"},{key:"Leaves",val:"Wrinkled, joined in pairs around stem"},{key:"Flowers",val:"Mauve-lilac, Jul-Aug"},{key:"Spines",val:"Stiff spines on stem and leaves"},{key:"Water cups",val:"Leaf bases collect rainwater"},{key:"Seedhead",val:"Persistent spiny brown head"}],habitat:"Road verges, riverbanks, railway embankments, disturbed ground. Moist base-rich soils.",habitatTags:["Road verge","Riverbank","Railway embankment","Biennial","Disturbed ground"],ecology:"Exceptional seed plant for goldfinches in winter. Flowers provide nectar for bumblebees and butterflies.",toxic:false,lookalikes:"Wild Teasel and Small Teasel are both native. Fuller's Teasel has hooked spines and was cultivated for raising nap on cloth.",links:["medicinal","scan"],season_raw:{leaf:[0,1,2,3,4,5,6,7,8,9,10,11],flower:[5,6,7],fruit:[7,8,9,10,11]}},
+  {id:20,name:"Yellow Rattle",latin:"Rhinanthus minor",family:"Orobanchaceae",genus:"Rhinanthus",order:"Lamiales",filters:["medicinal","woodland"],statusLabel:"Least Concern",statusClass:"least-concern",description:"A semi-parasitic annual that attacks grass roots, reducing their vigour and allowing wildflowers to establish. The tool of choice for meadow restoration.",features:[{key:"Height",val:"10-50 cm"},{key:"Leaves",val:"Oblong, toothed, opposite, stalkless"},{key:"Flowers",val:"Yellow, hooded, May-Aug"},{key:"Calyx",val:"Inflated papery - seeds rattle inside"},{key:"Parasitism",val:"Root-parasitic on grasses"},{key:"Annual",val:"Sets seed and dies"}],habitat:"Ancient hay meadows, road verges and upland limestone grassland. Indicator of traditionally managed botanically-rich grassland.",habitatTags:["Hay meadow","Road verge","Limestone grassland","Annual","Meadow restoration"],ecology:"Keystone meadow species. By suppressing dominant grasses it creates conditions for many wildflowers to establish.",toxic:false,lookalikes:"Greater Yellow Rattle is larger and rarer. Lousewort has similar pink flowers in different habitat.",links:["medicinal","scan"],season_raw:{leaf:[3,4,5,6,7],flower:[3,4,5,6],fruit:[5,6,7]}}
+];
+
+let activeFilter="all", activeAlpha=null, searchQuery="", sortMode="alpha", selectedId=null;
+
+function getFiltered() {
+  let list=[...plants];
+  if(activeFilter!=="all") list=list.filter(p=>p.filters.includes(activeFilter));
+  if(activeAlpha) list=list.filter(p=>p.name.toUpperCase().startsWith(activeAlpha));
+  if(searchQuery){const q=searchQuery.toLowerCase();list=list.filter(p=>p.name.toLowerCase().includes(q)||p.latin.toLowerCase().includes(q)||p.family.toLowerCase().includes(q)||p.habitatTags.some(t=>t.toLowerCase().includes(q))||p.description.toLowerCase().includes(q));}
+  if(sortMode==="alpha") list.sort((a,b)=>a.name.localeCompare(b.name));
+  else if(sortMode==="alpha-desc") list.sort((a,b)=>b.name.localeCompare(a.name));
+  else if(sortMode==="family") list.sort((a,b)=>a.family.localeCompare(b.family)||a.name.localeCompare(b.name));
+  else if(sortMode==="rarity") list.sort((a,b)=>rarityOrder.indexOf(a.statusClass)-rarityOrder.indexOf(b.statusClass));
+  return list;
+}
+
+function buildAlphaBar(){
+  const bar=document.getElementById("alpha-bar");bar.innerHTML="";
+  const used=new Set(plants.map(p=>p.name[0].toUpperCase()));
+  "ABCDEFGHIJKLMNOPQRSTUVWXYZ".split("").forEach(l=>{
+    const btn=document.createElement("button");
+    btn.className="alpha-btn"+(used.has(l)?" has-entries":"")+(activeAlpha===l?" active":"");
+    btn.textContent=l; btn.disabled=!used.has(l);
+    btn.addEventListener("click",()=>{activeAlpha=(activeAlpha===l)?null:l;buildAlphaBar();renderIndex();});
+    bar.appendChild(btn);
+  });
+}
+
+function renderIndex(){
+  const container=document.getElementById("plant-index");
+  const noResults=document.getElementById("no-results");
+  container.querySelectorAll(".letter-group").forEach(el=>el.remove());
+  const filtered=getFiltered();
+  if(!filtered.length){noResults.style.display="block";return;}
+  noResults.style.display="none";
+  if(sortMode==="alpha"||sortMode==="alpha-desc"){
+    const groups={};
+    filtered.forEach(p=>{const l=p.name[0].toUpperCase();if(!groups[l])groups[l]=[];groups[l].push(p);});
+    Object.keys(groups).sort((a,b)=>sortMode==="alpha-desc"?b.localeCompare(a):a.localeCompare(b)).forEach(letter=>{
+      const group=document.createElement("div");group.className="letter-group";
+      group.innerHTML='<div class="letter-heading">'+letter+"</div>";
+      groups[letter].forEach(p=>group.appendChild(makeRow(p)));
+      container.insertBefore(group,noResults);
+    });
+  } else {
+    const group=document.createElement("div");group.className="letter-group";
+    filtered.forEach(p=>group.appendChild(makeRow(p)));
+    container.insertBefore(group,noResults);
+  }
+}
+
+function makeRow(p){
+  const row=document.createElement("div");
+  row.className="plant-row"+(p.id===selectedId?" active":"");
+  row.dataset.id=p.id;
+  const badges=[];
+  if(p.filters.includes("medicinal")) badges.push('<span class="row-badge medicinal">Medicinal</span>');
+  if(p.filters.includes("toxic")) badges.push('<span class="row-badge toxic">Toxic</span>');
+  if(p.filters.includes("edible")) badges.push('<span class="row-badge edible">Edible</span>');
+  if(p.filters.includes("endangered")) badges.push('<span class="row-badge endangered">Threatened</span>');
+  const flowerMonths=p.season_raw.flower.map(i=>MONTHS[i]).join("");
+  row.innerHTML='<div><div class="row-name">'+p.name+'</div><div class="row-latin">'+p.latin+'</div><div class="row-badges">'+badges.join("")+"</div></div>"+'<div class="row-season">'+(flowerMonths?"Flowers: "+flowerMonths:"")+"</div>";
+  row.addEventListener("click",()=>selectPlant(p.id));
+  return row;
+}
+
+function selectPlant(id){
+  selectedId=id; renderIndex();
+  const p=plants.find(x=>x.id===id); if(!p) return;
+  const color=statusColors[p.statusClass]||"#6ba368";
+  const pill=document.getElementById("d-status-pill");
+  pill.textContent=p.statusLabel; pill.style.color=color; pill.style.border="0.5px solid "+color+"55"; pill.style.background=color+"18";
+  document.getElementById("d-img").src=p.img||"../assets/images/forest_elf.jpg";
+  document.getElementById("d-name").textContent=p.name;
+  document.getElementById("d-latin").textContent=p.latin;
+  document.getElementById("d-taxonomy").innerHTML='<div class="tax-item"><div class="tax-key">Family</div><div class="tax-val">'+p.family+'</div></div><div class="tax-item"><div class="tax-key">Genus</div><div class="tax-val">'+p.genus+'</div></div><div class="tax-item"><div class="tax-key">Order</div><div class="tax-val">'+p.order+'</div></div><div class="tax-item"><div class="tax-key">Status</div><div class="tax-val" style="color:'+color+'">'+p.statusLabel+"</div></div>";
+  document.getElementById("d-description").textContent=p.description;
+  document.getElementById("d-features").innerHTML=p.features.map(f=>'<div class="feature-item"><div class="feature-key">'+f.key+'</div><div class="feature-val">'+f.val+"</div></div>").join("");
+  document.getElementById("d-habitat").textContent=p.habitat;
+  document.getElementById("d-habitat-tags").innerHTML=p.habitatTags.map(t=>'<span class="habitat-tag">'+t+"</span>").join("");
+  document.getElementById("d-season").innerHTML=MONTHS.map((m,i)=>{
+    const iF=p.season_raw.flower.includes(i),iFr=p.season_raw.fruit.includes(i),iL=p.season_raw.leaf.includes(i);
+    const cls=iF?"flower":iFr?"fruit":iL?"leaf":"";
+    return'<div class="season-month"><div class="season-month-label">'+m+'</div><div class="season-month-block '+cls+'"></div></div>';
+  }).join("");
+  document.getElementById("d-ecology").textContent=p.ecology;
+  const ws=document.getElementById("d-warning-section");
+  if(p.toxic){ws.style.display="block";document.getElementById("d-warning").innerHTML="<strong>Toxicity Warning</strong><p>"+p.toxicNote+"</p>";}else{ws.style.display="none";}
+  document.getElementById("d-lookalikes").textContent=p.lookalikes;
+  const lm={medicinal:{label:"See Remedies",href:"remedies.html"},rarity:{label:"Rarity Details",href:"rarity.html"},scan:{label:"Scan a Plant",href:"scan.html",primary:true}};
+  document.getElementById("d-cross-links").innerHTML=p.links.map(l=>'<a href="'+lm[l].href+'" class="cross-link'+(lm[l].primary?" primary":"")+'">'+lm[l].label+"</a>").join("");
+  document.getElementById("detail-empty").style.display="none";
+  const content=document.getElementById("detail-content");
+  content.style.display="none"; void content.offsetWidth; content.style.display="block";
+  document.getElementById("detail-panel").scrollTop=0;
+}
+
+document.querySelectorAll(".filter-pill").forEach(btn=>{
+  btn.addEventListener("click",()=>{document.querySelectorAll(".filter-pill").forEach(b=>b.classList.remove("active"));btn.classList.add("active");activeFilter=btn.dataset.filter;activeAlpha=null;buildAlphaBar();renderIndex();});
+});
+document.getElementById("search-input").addEventListener("input",e=>{searchQuery=e.target.value;activeAlpha=null;buildAlphaBar();renderIndex();});
+document.getElementById("sort-select").addEventListener("change",e=>{sortMode=e.target.value;renderIndex();});
+const nav=document.querySelector("nav");
+window.addEventListener("scroll",()=>{nav.style.background=window.scrollY>40?"rgba(13,26,14,0.95)":"";nav.style.backdropFilter=window.scrollY>40?"blur(12px)":"";});
+buildAlphaBar(); renderIndex();
+</script>
+</body>
+</html>
