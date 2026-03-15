@@ -1,4 +1,4 @@
-# 🌿 Botanica — Field Intelligence for the Natural World
+# 🌿 FloraSense— Field Intelligence for the Natural World
 
 A plant identification web app. Identify species, assess rarity, detect disease, and explore medicinal value.
 
