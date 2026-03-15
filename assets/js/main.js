@@ -37,7 +37,7 @@ function initMobileNav() {
         <path d="M16 8C16 8 10 14 10 20C10 23.3 12.7 26 16 26" stroke="#8fb08a" stroke-width="1" fill="none"/>
         <line x1="16" y1="26" x2="16" y2="30" stroke="#6ba368" stroke-width="1.5"/>
       </svg>
-      Botanica
+      FloraSense
     </a>
     <button class="nav-mobile-close" id="nav-mobile-close">&times;</button>
     <ul class="nav-mobile-links">
