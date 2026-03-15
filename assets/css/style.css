@@ -420,10 +420,10 @@
     content: '';
     position: absolute;
     inset: 0;
-    background-image: url('../assets/images/forest_elf.jpg');
+    background-image: url('../images/forest_elf.webp');
     background-size: cover;
     background-position: center;
-    opacity: 0.06;
+    opacity: 0.1;
     filter: saturate(0.3);
   }
 
