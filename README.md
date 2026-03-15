@@ -1,13 +1,10 @@
-# 🌿 FloraSense— Field Intelligence for the Natural World
+# 🌿 FloraSense — Field Intelligence for the Natural World
 
 A plant identification web app. Identify species, assess rarity, detect disease, and explore medicinal value.
 
----
-
 ## Project Structure
 
-```
-botanica/
+floraSense/
 ├── index.html              ← Landing page
 ├── assets/
 │   ├── css/
@@ -23,33 +20,14 @@ botanica/
 └── README.md
 ```
 
----
 
-## Running Locally
+# Running Locally
 
-### Option 1 — VS Code Live Server (recommended)
+VS Code Live Server (recommended)
 1. Install the **Live Server** extension by Ritwick Dey
 2. Right-click `index.html` → **Open with Live Server**
 3. Opens at `http://127.0.0.1:5500`
 
-### Option 2 — Python (no install needed)
-```bash
-cd botanica
-python3 -m http.server 8080
-# open http://localhost:8080
-```
-
-### Option 3 — Node http-server
-```bash
-npm install -g http-server
-cd botanica
-http-server
-```
-
-> ⚠️ Always serve via a local server (not by opening the HTML file directly).  
-> Direct `file://` opens block font loading and some background image paths.
-
----
 
 ## Next Steps to Build
 
